@@ -53,11 +53,17 @@ from src import computation as comp
 import xarray as xr
 import pandas as pd
 import numpy as np
+import ipdb
+
 from matplotlib import pyplot as plt
 import os
-
+from neuron import h, gui
 ```
 
+
+```python
+
+```
 
 ```python colab={"base_uri": "https://localhost:8080/"} id="a06b6e4a" outputId="989c69e2-c8c4-43e0-9ba6-7a36f66be4c3"
 #define paths
@@ -83,7 +89,7 @@ print(os.path.exists(spines_path))
 #io.readfile(test_path)
 soma = io.loadmat(soma_path)
 spine_data = io.loadmat(spines_path)
-
+soma_data = soma
 ```
 
 
@@ -129,6 +135,9 @@ print(spine_field_2['trial_traces'].shape)
 soma_traces = np.array(soma_field_2['trial_traces'])
 spine_traces = np.array(spine_field_2['trial_traces'][:,:,0,:,0].swapaxes(0,-1))
 
+fovs = spine_data['dend_cell'][2,:].shape[0]
+print(fovs)
+
 print(soma_traces.shape)
 print(spine_traces.shape)
 
@@ -138,44 +147,73 @@ print(spine_traces.shape)
 ```
 
 ```python
-soma_sub_traces = comp.select_timesteps(soma_traces)
-soma_means, soma_means_sorted, soma_bool = plot.produce_activity_plots(soma_sub_traces)
+soma_traces = comp.get_traces(soma_data)
+spine_traces = comp.get_traces(spine_data)
 ```
 
 ```python
-plot.plot_activity_plots(soma_sub_traces, soma_means, soma_means_sorted, soma_bool)
+soma_sub_traces = comp.select_timesteps(soma_traces)
+```
+
+
+```python
+plot.plot_activity_plots(soma_sub_traces)
 ```
 
 ```python
 summed_spine_traces = comp.get_summed_spine_trace(spine_data)
-spine_sub_traces = comp.select_timesteps(summed_spine_traces)
-spine_means, spine_means_sorted, spine_bool = plot.produce_activity_plots(spine_sub_traces)    
+sum_spine_sub_traces = comp.select_timesteps(summed_spine_traces)
+```
+
+
+```python
+plot.plot_activity_plots(sum_spine_sub_traces)
 ```
 
 ```python
-plot.plot_activity_plots(spine_sub_traces, spine_means, spine_means_sorted, spine_bool)
+
+summed_spine_traces = comp.get_summed_trial_sampled_spine_trace(spine_data)
+sum_spine_sub_traces = comp.select_timesteps(summed_spine_traces)
+```
+
+```python
+plot.plot_activity_plots(sum_spine_sub_traces)
 ```
 
 ```python
 spine_sub_traces = comp.select_timesteps(spine_traces)
-spine_means, spine_means_sorted, spine_bool = plot.produce_activity_plots(spine_sub_traces)  
+print(spine_traces.shape)
+print(spine_sub_traces.shape)
 ```
 
 ```python
-plot.plot_activity_plots(spine_sub_traces, spine_means, spine_means_sorted, spine_bool)
+plot.plot_activity_plots(spine_sub_traces)
 ```
 
 ```python
-plot.plot_activity_plots(soma_sub_traces, soma_means, soma_means_sorted, soma_bool)
+plot.plot_activity_plots(soma_sub_traces)
 ```
 
 ```python
-best_match_traces, best_match_FOV, best_match_idx, max_dot = comp.get_most_similar_spine(soma_sub_traces, spine_data)
-spine_means, spine_means_sorted, spine_bool = plot.produce_activity_plots(best_match_traces)  
+similarity_list, fov_num_list, spine_num_list = comp.get_most_similar_spine(soma_data, spine_data)
+#spine_means, spine_means_sorted, spine_bool = plot.produce_activity_plots(best_match_traces)  
 ```
 
 ```python
-plot.plot_activity_plots(best_match_traces, spine_means, spine_means_sorted, spine_bool)
+rank = 0
+best_match_traces = comp.get_traces(spine_data, fov=fov_num_list[rank], spine_index=spine_num_list[rank])
+best_match_traces = comp.select_timesteps(best_match_traces)
+```
+
+```python
+print(best_match_traces.shape)
+```
+
+```python
+for rank in range(10):
+    best_match_traces = comp.get_traces(spine_data, fov=fov_num_list[rank], spine_index=spine_num_list[rank])
+    best_match_traces = comp.select_timesteps(best_match_traces)
+    plot.plot_activity_plots(best_match_traces)
 ```
 
 ```python
@@ -183,7 +221,15 @@ plot.plot_activity_plots(best_match_traces, spine_means, spine_means_sorted, spi
 ```
 
 ```python
+stim_repeats = 10
 
+
+np.random.randint(0,stim_repeats, (3,4,5))
+```
+
+```python
+fov = 0
+type(fov) is int
 ```
 
 ```python
