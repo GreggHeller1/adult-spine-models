@@ -11,9 +11,6 @@ def readfile(path):
         print(lines)
 
 
-
-
-
 def loadmat(path):
     try:
         f = _loadmat(path)

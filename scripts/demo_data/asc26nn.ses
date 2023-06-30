@@ -1,0 +1,490 @@
+{load_file("nrngui.hoc")}
+objectvar save_window_, rvp_
+objectvar scene_vector_[4]
+objectvar ocbox_, ocbox_list_, scene_, scene_list_
+{ocbox_list_ = new List()  scene_list_ = new List()}
+{pwman_place(0,0,0)}
+
+//Begin CellBuild[5]
+{
+load_file("celbild.hoc", "CellBuild")
+}
+{ocbox_ = new CellBuild(1)}
+{object_push(ocbox_)}
+{
+version(5.7)
+continuous = 0
+}
+{object_push(topol)}
+{
+first = 0
+slist.remove_all()
+sname = "dend"
+objref tobj
+}
+{
+tobj = new CellBuildSection("_pysec.soma",0, 0, tobj, 0) slist.append(tobj)
+  tobj.position(0,0,10,0) tobj.lx=5 tobj.ly=0 tobj.i3d=5
+tobj = new CellBuildSection("dend4",0, 0, tobj, 0.5) slist.append(tobj)
+tobj.parent=slist.object(0)
+  tobj.position(5,0,-3.01999,12.09) tobj.lx=0.990005 tobj.ly=6.045 tobj.i3d=4
+tobj = new CellBuildSection("dend3",0, 0, tobj, 0.5) slist.append(tobj)
+tobj.parent=slist.object(0)
+  tobj.position(5,0,-92.22,28.13) tobj.lx=-43.61 tobj.ly=14.065 tobj.i3d=23
+tobj = new CellBuildSection("dend2",0, 0, tobj, 0.5) slist.append(tobj)
+tobj.parent=slist.object(0)
+  tobj.position(5,0,16.84,-13.82) tobj.lx=10.92 tobj.ly=-6.91 tobj.i3d=5
+tobj = new CellBuildSection("dend1",0, 0, tobj, 0.5) slist.append(tobj)
+tobj.parent=slist.object(0)
+  tobj.position(5,0,-7.57999,-36.77) tobj.lx=-1.28999 tobj.ly=-18.385 tobj.i3d=8
+tobj = new CellBuildSection("apic",0, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(0)
+  tobj.position(10,0,15.67,-5.67) tobj.lx=12.835 tobj.ly=-2.835 tobj.i3d=7
+tobj = new CellBuildSection("dend4",1, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(1)
+  tobj.position(-3.01999,12.09,-108.51,27.76) tobj.lx=-55.765 tobj.ly=19.925 tobj.i3d=26
+tobj = new CellBuildSection("dend4",2, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(1)
+  tobj.position(-3.01999,12.09,-4.12997,24.05) tobj.lx=-3.57498 tobj.ly=18.07 tobj.i3d=3
+tobj = new CellBuildSection("dend2",1, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(3)
+  tobj.position(16.84,-13.82,44.36,-34.3) tobj.lx=30.6 tobj.ly=-24.06 tobj.i3d=9
+tobj = new CellBuildSection("dend2",2, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(3)
+  tobj.position(16.84,-13.82,8.81998,-45.16) tobj.lx=12.83 tobj.ly=-29.49 tobj.i3d=9
+tobj = new CellBuildSection("dend1",1, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(4)
+  tobj.position(-7.57999,-36.77,-16.96,-33.81) tobj.lx=-12.27 tobj.ly=-35.29 tobj.i3d=6
+tobj = new CellBuildSection("dend1",2, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(4)
+  tobj.position(-7.57999,-36.77,-19.18,-68.11) tobj.lx=-13.38 tobj.ly=-52.44 tobj.i3d=6
+tobj = new CellBuildSection("apic",1, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(5)
+  tobj.position(15.67,-5.67,9.75,12.83) tobj.lx=12.71 tobj.ly=3.58 tobj.i3d=5
+tobj = new CellBuildSection("apic",2, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(5)
+  tobj.position(15.67,-5.67,12.71,-45.89) tobj.lx=14.19 tobj.ly=-25.78 tobj.i3d=16
+tobj = new CellBuildSection("apic",3, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(12)
+  tobj.position(9.75,12.83,43.06,62.92) tobj.lx=26.405 tobj.ly=37.875 tobj.i3d=14
+tobj = new CellBuildSection("apic",4, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(12)
+  tobj.position(9.75,12.83,-41.33,47.87) tobj.lx=-15.79 tobj.ly=30.35 tobj.i3d=12
+tobj = new CellBuildSection("apic",5, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(13)
+  tobj.position(12.71,-45.89,9.5,-52.06) tobj.lx=11.105 tobj.ly=-48.975 tobj.i3d=5
+tobj = new CellBuildSection("apic",6, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(13)
+  tobj.position(12.71,-45.89,14.44,-52.8) tobj.lx=13.575 tobj.ly=-49.345 tobj.i3d=4
+tobj = new CellBuildSection("apic",7, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(16)
+  tobj.position(9.5,-52.06,4.57001,-87.1) tobj.lx=7.035 tobj.ly=-69.58 tobj.i3d=7
+tobj = new CellBuildSection("apic",8, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(16)
+  tobj.position(9.5,-52.06,-52.68,-75.01) tobj.lx=-21.59 tobj.ly=-63.535 tobj.i3d=8
+tobj = new CellBuildSection("apic",9, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(17)
+  tobj.position(14.44,-52.8,18.39,-76.98) tobj.lx=16.415 tobj.ly=-64.89 tobj.i3d=12
+tobj = new CellBuildSection("apic",10, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(17)
+  tobj.position(14.44,-52.8,12.47,-52.8) tobj.lx=13.455 tobj.ly=-52.8 tobj.i3d=2
+tobj = new CellBuildSection("apic",11, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(20)
+  tobj.position(18.39,-76.98,3.83002,-36.02) tobj.lx=11.11 tobj.ly=-56.5 tobj.i3d=14
+tobj = new CellBuildSection("apic",12, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(20)
+  tobj.position(18.39,-76.98,29.98,-137.44) tobj.lx=24.185 tobj.ly=-107.21 tobj.i3d=12
+tobj = new CellBuildSection("apic",13, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(21)
+  tobj.position(12.47,-52.8,-50.46,-52.31) tobj.lx=-18.995 tobj.ly=-52.555 tobj.i3d=11
+}
+{
+tobj = new CellBuildSection("apic",14, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(21)
+  tobj.position(12.47,-52.8,13.95,-53.05) tobj.lx=13.21 tobj.ly=-52.925 tobj.i3d=2
+tobj = new CellBuildSection("apic",15, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(22)
+  tobj.position(3.83002,-36.02,1.11002,-10.85) tobj.lx=2.47002 tobj.ly=-23.435 tobj.i3d=6
+tobj = new CellBuildSection("apic",16, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(22)
+  tobj.position(3.83002,-36.02,-92.4,-38) tobj.lx=-44.285 tobj.ly=-37.01 tobj.i3d=13
+tobj = new CellBuildSection("apic",17, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(23)
+  tobj.position(29.98,-137.44,44.3,-147.31) tobj.lx=37.14 tobj.ly=-142.375 tobj.i3d=3
+tobj = new CellBuildSection("apic",18, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(23)
+  tobj.position(29.98,-137.44,41.83,-163.59) tobj.lx=35.905 tobj.ly=-150.515 tobj.i3d=5
+tobj = new CellBuildSection("apic",19, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(29)
+  tobj.position(41.83,-163.59,29.74,-171) tobj.lx=35.785 tobj.ly=-167.295 tobj.i3d=5
+tobj = new CellBuildSection("apic",20, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(29)
+  tobj.position(41.83,-163.59,62.31,-205.29) tobj.lx=52.07 tobj.ly=-184.44 tobj.i3d=7
+tobj = new CellBuildSection("apic",21, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(30)
+  tobj.position(29.74,-171,9.26001,-158.9) tobj.lx=19.5 tobj.ly=-164.95 tobj.i3d=5
+tobj = new CellBuildSection("apic",22, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(30)
+  tobj.position(29.74,-171,-48.48,-182.1) tobj.lx=-9.36998 tobj.ly=-176.55 tobj.i3d=9
+tobj = new CellBuildSection("apic",23, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(31)
+  tobj.position(62.31,-205.29,83.53,-214.18) tobj.lx=72.92 tobj.ly=-209.735 tobj.i3d=6
+tobj = new CellBuildSection("apic",24, 0, tobj, 1) slist.append(tobj)
+tobj.parent=slist.object(31)
+  tobj.position(62.31,-205.29,48,-241.32) tobj.lx=55.155 tobj.ly=-223.305 tobj.i3d=5
+all_init()
+}
+for i=0, slist.count-1 {slist.object(i).rdses()}
+0 0 0 10
+1.66667 0 0 10
+5 0 0 10
+8.33333 0 0 10
+10 0 0 10
+5 0 0 2.02
+2.04001 3.94 0 2.02
+-1.66998 8.88 0 2.02
+-3.01999 12.09 0 2.02
+5 0 0 2.02
+0.309998 -0.739998 0 2.02
+-3.01999 -0.489998 -3 2.02
+-7.59 -0.370003 -3 2.02
+-11.78 -0.739998 -6 2.02
+-17.46 0.370003 -6 2.02
+-23.5 3.33 -6 2.02
+-28.07 5.8 -6 2.02
+-33.12 9.75 -6 2.02
+-35.47 10.49 -6 2.02
+-39.17 10.12 -6 2.02
+-43.12 10.24 -6 2.02
+-45.83 12.58 -6 2.02
+-49.04 16.9 -6 2.02
+-54.47 19.25 -6 2.02
+-61.5 22.33 -6 2.02
+-66.56 24.43 -6 2.02
+-70.63 25.79 -8 2.02
+-73.47 26.77 -8 2.02
+-78.4 27.02 -8 2.02
+-83.21 28.5 -8 2.02
+-90 28.75 -8 2.02
+-92.22 28.13 -8 2.02
+5 0 0 2.02
+7.47 -2.59 0 2.02
+10.8 -7.39999 0 2.02
+14.99 -11.35 0 2.02
+16.84 -13.82 0 2.02
+5 0 0 2.14
+3.76999 -4.2 0 2.14
+2.04001 -9.13 0 2.14
+-0.670013 -15.06 0 2.14
+-1.41 -17.77 0 2.14
+-2.39999 -24.68 0 2.14
+-5.35999 -30.6 0 2.14
+-7.57999 -36.77 0 2.14
+10 0 0 2.14
+10.74 0.25 4 2.14
+10.74 0.5 7 2.14
+12.96 -0.490005 12 2.14
+16.91 0.5 18 2.14
+16.41 -3.21 23 2.14
+15.67 -5.67 28 2.14
+-3.01999 12.09 0 2.02
+-6.22998 12.83 0 2.02
+-10.67 14.06 0 2.02
+-17.09 14.31 0 2.02
+-21.9 13.32 8 2.02
+-26.59 14.18 8 2.02
+-33.99 16.16 11 2.02
+-42.26 18.13 14 2.02
+-46.08 19.74 14 2.02
+-49.91 20.72 14 2.02
+-53.98 20.85 19 2.02
+-56.81 22.45 19 2.02
+-60.02 23.81 19 2.02
+-62.12 24.05 19 2.02
+-66.68 25.53 26 2.02
+-69.15 22.94 26 2.02
+-70.02 22.45 26 2.02
+-72.11 20.11 31 2.02
+-75.2 17.89 31 2.02
+-81.49 18.01 31 2.02
+-84.82 19.12 31 2.02
+-88.03 20.48 31 2.02
+-96.91 21.71 35 2.02
+-101.72 24.05 35 2.02
+-105.92 26.4 38 2.02
+-108.51 27.76 38 2.02
+-3.01999 12.09 0 2.02
+-3.88998 16.77 0 2.02
+-4.12997 24.05 0 2.02
+16.84 -13.82 0 2.02
+18.69 -17.03 0 2.02
+22.02 -17.77 0 2.02
+26.1 -19.25 0 2.02
+30.91 -20.98 0 2.02
+34.24 -22.95 0 2.02
+37.94 -24.55 -4 2.02
+40.65 -28.26 -4 2.02
+44.36 -34.3 -4 2.02
+16.84 -13.82 0 2.02
+15.12 -17.89 -3 2.02
+13.51 -20.98 -3 2.02
+10.67 -25.42 -3 2.02
+9.06998 -30.35 -6 2.02
+6.59998 -35.29 -6 2.02
+8.32999 -39.98 -6 2.02
+7.70999 -43.06 -10 2.02
+8.81998 -45.16 -10 2.02
+-7.57999 -36.77 0 2.14
+-7.09 -35.54 10 2.14
+-9.79999 -36.03 10 2.14
+-11.53 -34.55 21 2.14
+-13.25 -32.33 25 2.14
+-16.96 -33.81 30 2.14
+-7.57999 -36.77 0 2.14
+-8.57001 -42.94 0 2.14
+-9.54999 -50.84 0 2.14
+-11.28 -57 0 2.14
+-15.97 -64.16 0 2.14
+-19.18 -68.11 0 2.14
+15.67 -5.67 28 2.14
+13.7 -3.7 33 2.14
+11.97 3.21 33 2.14
+9.75 7.9 37 2.14
+9.75 12.83 37 2.14
+15.67 -5.67 28 2.14
+17.15 -8.63 34 2.14
+19.62 -11.1 38 2.14
+19.13 -13.82 42 2.14
+17.15 -15.79 47 2.14
+17.4 -18.26 52 2.14
+18.88 -19.74 54 2.14
+17.65 -24.18 57 2.14
+18.39 -28.62 61 2.14
+18.14 -26.15 65 2.14
+15.18 -31.58 69 2.14
+15.67 -36.27 72 2.14
+14.19 -40.46 74 2.14
+13.45 -42.44 78 2.14
+12.71 -45.65 82 2.14
+12.71 -45.89 87 2.14
+9.75 12.83 37 2.14
+10.74 17.77 37 2.14
+14.19 25.42 37 2.14
+18.63 30.85 37 2.14
+19.37 34.55 42 2.14
+20.11 37.51 42 2.14
+21.84 40.22 42 2.14
+26.53 42.94 49 2.14
+32.21 44.66 55 2.14
+36.15 46.15 55 2.14
+37.14 50.09 59 2.14
+38.87 54.78 59 2.14
+41.09 59.72 61 2.14
+43.06 62.92 61 2.14
+9.75 12.83 37 2.14
+7.53 16.29 37 2.14
+1.11002 20.24 38 2.14
+-4.81 24.68 38 2.14
+-9.5 28.87 38 2.14
+-17.39 35.53 37 2.14
+-19.86 38 37 2.14
+-22.82 42.2 42 2.14
+-28.5 44.91 42 2.14
+-32.69 44.17 42 2.14
+-37.13 45.9 42 2.14
+-41.33 47.87 46 2.14
+12.71 -45.89 87 2.14
+11.97 -44.41 78 2.14
+9.26001 -47.87 78 2.14
+9.26001 -52.06 78 2.14
+9.5 -52.06 73 2.14
+12.71 -45.89 87 2.14
+14.93 -48.11 91 2.14
+15.18 -49.35 95 2.14
+14.44 -52.8 101 2.14
+9.5 -52.06 73 2.14
+14.19 -57.74 69 2.14
+13.95 -63.41 61 2.14
+10.98 -70.57 61 2.14
+8.76001 -80.19 45 2.14
+5.06 -85.87 35 2.14
+4.57001 -87.1 29 2.14
+9.5 -52.06 73 2.14
+4.32001 -55.02 69 2.14
+-1.34998 -58.97 69 2.14
+-9 -62.43 64 2.14
+-18.13 -66.13 59 2.14
+-26.27 -69.09 59 2.14
+-36.64 -75.75 59 2.14
+-52.68 -75.01 54 2.14
+14.44 -52.8 101 2.14
+15.92 -51.81 104 2.14
+14.19 -55.52 110 2.14
+15.67 -57.74 110 2.14
+15.18 -61.19 114 2.14
+16.41 -62.67 114 2.14
+18.39 -66.37 117 2.14
+19.13 -69.09 122 2.14
+19.13 -69.09 124 2.14
+19.13 -69.58 128 2.14
+18.39 -73.04 131 2.14
+18.39 -76.98 136 2.14
+14.44 -52.8 101 2.14
+12.47 -52.8 102 2.14
+18.39 -76.98 136 2.14
+16.17 -71.55 141 2.14
+13.21 -64.15 141 2.14
+13.21 -64.15 147 2.14
+12.47 -58.72 152 2.14
+9.75 -55.27 156 2.14
+9.75 -55.27 162 2.14
+9.75 -55.27 168 2.14
+8.02002 -52.06 168 2.14
+6.30002 -47.62 173 2.14
+6.30002 -45.89 177 2.14
+5.56 -42.93 177 2.14
+4.57001 -37.01 177 2.14
+3.83002 -36.02 183 2.14
+18.39 -76.98 136 2.14
+17.89 -81.92 139 2.14
+14.93 -91.29 142 2.14
+15.92 -96.48 142 2.14
+13.45 -102.4 142 2.14
+15.43 -108.32 146 2.14
+14.93 -111.03 151 2.14
+17.89 -114.24 151 2.14
+21.84 -118.93 156 2.14
+23.32 -123.62 162 2.14
+27.52 -132.01 162 2.14
+29.98 -137.44 167 2.14
+12.47 -52.8 102 2.14
+7.04001 -45.15 97 2.14
+1.36002 -42.93 97 2.14
+-6.28998 -43.43 97 2.14
+-14.18 -43.92 96 2.14
+-22.57 -43.18 96 2.14
+-28.99 -45.4 96 2.14
+-32.69 -46.39 96 2.14
+-39.35 -45.4 96 2.14
+-44.78 -48.11 96 2.14
+-50.46 -52.31 96 2.14
+12.47 -52.8 102 2.14
+13.95 -53.05 102 2.14
+3.83002 -36.02 183 2.14
+4.57001 -28.87 183 2.14
+4.82001 -23.44 183 2.14
+2.35001 -14.06 188 2.14
+-0.119995 -16.28 193 2.14
+1.11002 -10.85 197 2.14
+3.83002 -36.02 183 2.14
+-3.07999 -33.8 183 2.14
+-8.25998 -33.8 183 2.14
+-20.85 -31.09 186 2.14
+-30.72 -27.14 186 2.14
+-39.11 -23.69 190 2.14
+-44.04 -23.93 190 2.14
+-53.66 -29.85 194 2.14
+-62.3 -31.33 196 2.14
+-68.47 -31.83 201 2.14
+-76.61 -34.79 201 2.14
+-83.52 -37.5 201 2.14
+-92.4 -38 201 2.14
+29.98 -137.44 167 2.14
+37.88 -143.11 174 2.14
+44.3 -147.31 179 2.14
+29.98 -137.44 167 2.14
+29 -142.87 172 2.14
+34.92 -150.52 172 2.14
+37.14 -156.68 176 2.14
+41.83 -163.59 176 2.14
+41.83 -163.59 176 2.14
+39.85 -162.11 180 2.14
+36.65 -165.07 180 2.14
+33.19 -167.54 180 2.14
+29.74 -171 180 2.14
+41.83 -163.59 176 2.14
+51.7 -170.5 176 2.14
+58.61 -177.66 177 2.14
+64.04 -188.27 177 2.14
+61.82 -200.36 182 2.14
+61.82 -200.36 187 2.14
+62.31 -205.29 190 2.14
+29.74 -171 180 2.14
+30.72 -169.76 184 2.14
+25.79 -167.29 184 2.14
+17.65 -162.61 187 2.14
+9.26001 -158.9 191 2.14
+29.74 -171 180 2.14
+26.28 -174.2 180 2.14
+16.91 -175.68 180 2.14
+8.52002 -177.41 180 2.14
+3.58002 -178.15 184 2.14
+-3.81998 -183.58 184 2.14
+-16.4 -183.83 184 2.14
+-29.48 -183.33 184 2.14
+-48.48 -182.1 184 2.14
+62.31 -205.29 190 2.14
+61.32 -208.01 193 2.14
+66.26 -211.22 193 2.14
+70.7 -211.22 193 2.14
+78.59 -213.19 193 2.14
+83.53 -214.18 193 2.14
+62.31 -205.29 190 2.14
+59.84 -210.23 191 2.14
+54.66 -221.58 191 2.14
+48.98 -231.2 191 2.14
+48 -241.32 196 2.14
+{object_pop()}
+{
+}
+{object_push(subsets)}
+{first = 0}
+{ tobj = snlist.object(0)}
+{consist()}
+{object_pop()}
+{
+}
+{object_push(geom)}
+{
+first = 0
+set_default()
+}
+{object_pop()}
+{
+}
+{object_push(memb)}
+{first=0}
+{object_pop()}
+{
+}
+{object_push(manage)}
+{
+first = 0
+classname = "Cell"
+etop=1 esub=1 egeom=1 emem=1
+itop=1 isub=0 igeom=0 imem=0
+bild.topol.names_off = 0
+bild.topol.circles_off = 1
+output_index = 0  output_x = 1
+thresh = 10
+}
+{object_pop()}
+{
+cexport()
+}
+{object_pop()}
+{
+save_window_=ocbox_.gtopol
+save_window_.size(-156.956,136.956,-250,70)
+scene_vector_[3] = save_window_
+ocbox_.gtopol = save_window_
+save_window_.save_name("ocbox_.gtopol")
+}
+{
+ocbox_.map("CellBuild[5]", 81, 115, 766.08, 374.4)
+}
+objref ocbox_
+//End CellBuild[5]
+
+objectvar scene_vector_[1]
+{doNotify()}
