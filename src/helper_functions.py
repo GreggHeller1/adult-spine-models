@@ -133,7 +133,13 @@ def get_traces(activity_data_struct, fov=0, spine_index=0):
     #tried to make it work for both soma and spine structure
     try:
         this_fov = get_fov(activity_data_struct, fov=fov)
-        spine_traces = np.array(this_fov['trial_traces'][:,:,0,:,spine_index].swapaxes(0,-1))
+        try:
+            spine_traces = np.array(this_fov['trial_traces'][:,:,0,:,spine_index].swapaxes(0,-1))
+        except TypeError as E:
+            spine_traces = np.array(io._todict(activity_data_struct[2])['trial_traces'][:,:,0,:,spine_index].swapaxes(0,-1))
+            #spine_traces = np.array(this_fov['trial_traces'])#[:,:,0,:,spine_index].swapaxes(0,-1))
+            #print(shape(spine_traces))
+            #raise()
         traces = spine_traces
 
     except IndexError as E:

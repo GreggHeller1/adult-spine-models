@@ -23,6 +23,43 @@ from src import helper_functions as hf
 #so we want to produce a matrix from the within sorts
 
 
+
+def reorder_directions_for_plotting(array, preferred_direcion_idx=None):
+    if preferred_direcion_idx is None:
+        preferred_direcion_idx = np.argmax(array)
+    return np.roll(array, -(preferred_direcion_idx-4)) #-4 because we want to leave the curve largely intact
+
+
+
+def plot_tuning_curves(ax=None, **kwargs):
+    #fig, ax = line_plot_key_labels(ax, **kwargs)
+    fig=None
+    fig, ax = new_ax(ax)
+    preferred_direction = 4
+    for label, means_array in kwargs.items():
+        if 'soma' in label:
+            preferred_direction = np.argmax(np.array(means_array))
+
+    for key, means_array in kwargs.items():
+        ordered_response_array = reorder_directions_for_plotting(means_array, preferred_direcion_idx=preferred_direction)
+        ax.plot(ordered_response_array, label=key)
+
+    ax.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
+    ax.set_xlabel('Direction')
+    ax.set_xticks([0,4,8,12], ['Orthogonal', 'Preferred', 'Orthogonal', 'Anti-preferred'])
+    ax.set_ylabel('Normalized amplitude')
+    return fig, ax
+
+
+def line_plot_key_labels(ax=None, **kwargs):
+
+    for key, array in kwargs.items():
+
+        ax.plot(array, label=key)
+    ax.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
+    return fig, ax
+
+
 def new_ax(ax):
     if ax is None:
         fig, ax = plt.subplots()

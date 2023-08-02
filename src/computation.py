@@ -31,7 +31,8 @@ def compile_spine_traces(spine_data, subset = 'all'):
             #Now should be spines x directions x presentations x samples
         zeta_scores = hf.get_fov_zetas(fov_activity_meta)
         if i == 1:
-            zeta_scores[5] = 0
+            #zeta_scores[5] = 0 #ONly want to ignore this one for 26 cell 3...
+            pass
         if 'unresponsive' in subset.lower():
             include_spines = np.where(zeta_scores > .05)[0]
         elif 'responsive' in subset.lower():
@@ -93,6 +94,31 @@ def weight_from_size(size_array):
     return size_array/max_val*m+b
 
 
+def top_20_size(spine_data, traces):
+    size_vector = []
+    for i, (fov_activity, fov_metadata )in enumerate(hf.fov_generator(spine_data)):
+        size_vector.extend(list(fov_metadata['spine_size'])[0])
+    size_array = np.array(size_vector)
+    weight_array = binary_weights(size_array, 20)
+    return apply_weights(weight_array, traces)
+
+def bottom_20_size(spine_data, traces):
+    size_vector = []
+    for i, (fov_activity, fov_metadata )in enumerate(hf.fov_generator(spine_data)):
+        size_vector.extend(list(fov_metadata['spine_size'])[0])
+    size_array = np.array(size_vector)
+    weight_array = binary_weights(size_array, -20)
+    return apply_weights(weight_array, traces)
+
+def binary_weights(size_array, threshold_percentage):
+    total_spines = len(size_array)
+    threshold_n = round(total_spines*threshold_percentage/100)
+    ind = np.argpartition(size_array, threshold_n)[threshold_n:]
+
+    weights = np.zeros(size_array.shape)
+    weights[ind] = 1
+    return weights
+
 def weights_neck_len_lin(spine_data, traces):
     size_vector = []
     for i, (fov_activity, fov_metadata )in enumerate(hf.fov_generator(spine_data)):
@@ -108,6 +134,50 @@ def weight_from_neck_len(size_array):
     max_val = np.max(size_array)
     return size_array/max_val*m+b
 
+
+def random_20(spine_data, traces):
+    size_vector = []
+    for i, (fov_activity, fov_metadata )in enumerate(hf.fov_generator(spine_data)):
+        num_spines = hf.get_num_spines_in_fov(fov_metadata)
+        fov_dist = hf.get_dist_from_root(spine_data, fov_num = i)
+        dist_vect = [fov_dist]*num_spines
+        size_vector.extend(dist_vect)
+    size_array = np.array(size_vector)
+    weight_array = random_binary_weights(size_array, 20)
+    return apply_weights(weight_array, traces)
+
+def random_binary_weights(size_array, threshold_percentage):
+    total_spines = len(size_array)
+    threshold_n = round(total_spines*threshold_percentage/100)
+    ind = np.random.choice(total_spines, size=threshold_n, replace=False)
+    weights = np.zeros(size_array.shape)
+    weights[ind] = 1
+    return weights
+
+
+
+def top_20_distance(spine_data, traces):
+    size_vector = []
+    for i, (fov_activity, fov_metadata )in enumerate(hf.fov_generator(spine_data)):
+        num_spines = hf.get_num_spines_in_fov(fov_metadata)
+        fov_dist = hf.get_dist_from_root(spine_data, fov_num = i)
+        dist_vect = [fov_dist]*num_spines
+        size_vector.extend(dist_vect)
+    size_array = np.array(size_vector)
+    weight_array = binary_weights(size_array, 20)
+    return apply_weights(weight_array, traces)
+
+
+def bottom_20_distance(spine_data, traces):
+    size_vector = []
+    for i, (fov_activity, fov_metadata )in enumerate(hf.fov_generator(spine_data)):
+        num_spines = hf.get_num_spines_in_fov(fov_metadata)
+        fov_dist = hf.get_dist_from_root(spine_data, fov_num = i)
+        dist_vect = [fov_dist]*num_spines
+        size_vector.extend(dist_vect)
+    size_array = np.array(size_vector)
+    weight_array = binary_weights(size_array, -20)
+    return apply_weights(weight_array, traces)
 
 
 def weights_distance_lin(spine_data, traces):
@@ -133,7 +203,8 @@ def weight_from_dist(size_array):
 def linear_integration(traces):
     return np.sum(traces, axis=0) #should be directions x samples
 
-def linear_soma(traces):
+def somatic_identity(traces):
+    #This somatic function is pass through, it does not apply an additional linear or nonlinear normalization on top of the integration
     return traces
 
 
@@ -146,7 +217,7 @@ def compute_model_output_from_random_sampled_fovs(spine_data,
                                                 simulated_trials_per_stim = 10,
                                                 weight_function=democratic_weights,
                                                 integration_function = linear_integration,
-                                                somatic_function = linear_soma,
+                                                somatic_function = somatic_identity,
                                                 ):
     num_directions = len(all_spine_activity_array['directions'])
     num_samples= len(all_spine_activity_array['samples'])
@@ -251,6 +322,9 @@ def trial_sampling(spine_data):
 
 #####################################
 
+def linear_normalization(array_in):
+    zeroed_array = array_in#-min(array_in)
+    return zeroed_array/max(zeroed_array)
 
 def select_timesteps(traces, first_sample =cfg.first_sample_to_take, last_sample =cfg.last_sample_to_take):
     selected_timesteps = traces[:,:,first_sample:last_sample]
@@ -298,6 +372,58 @@ def compute_branch_order_and_dist(section, xyz_coords):
         dist += parent.L
         this_section = parent
     return order, dist, dist_from_branch
+
+
+def get_branch_order_and_dist(h, spine_data, shifts_by_fov):
+    stat_dict = {}
+    for fov_num, fov in enumerate(spine_data['dend_cell'][2,:]):
+        fov_name = hf.get_fov_name(spine_data, fov_num)
+        print(fov_name)
+        stat_dict[fov_name] = {}
+
+        #current_input_dict[fov_num] = {}
+        #ref = spine_data['dend_cell'][2,fov]
+        fov_field_2 = spine_data[fov]#['DSI']
+        spine_count = fov_field_2['trial_traces'].shape[-1]
+
+        #should probably make this more elegant, I have copy and pasted this motif...
+        spines_pixel_coords = hf.get_spines_pixel_coords(spine_data, fov_num)
+        spines_global_coords = np.zeros((spines_pixel_coords.shape[1], 3))
+        for i in range(spines_pixel_coords.shape[1]):
+            spines_global_coords[i,:] = hf.get_spine_global_coords(h, spine_data, fov_num, i)
+
+        manual_shift = shifts_by_fov[fov_num]
+        #print(manual_shift)
+        if (manual_shift == np.array([0,0,0])).all():
+            print('using inferred shift')
+            optimal_shift = list(estimate_offset(h, spine_data, fov_num, max_shift=10, iterations=2))
+            #optimal_shift.append(0)
+            shift = np.array(optimal_shift)
+        else:
+            print('using manual shift')
+            shift = manual_shift
+
+
+
+        test_spines_global_coords = shift_coords(spines_global_coords, shift)
+
+        dist_list = []
+        order_list = []
+        for i in range(spine_count):
+            nearest_section, sec_coords, min_sec_dist = hf.find_closest_section(h, test_spines_global_coords[i,:])
+            #sec_fraction, seg_coords, min_seg_dist = find_closest_segment(nearest_section, test_spines_global_coords[i,:])
+            order, dist, dist_from_branch = compute_branch_order_and_dist(nearest_section, test_spines_global_coords[i,:])
+            print(f'order: {order}, dist: {dist}')
+            dist_list.append(dist)
+            order_list.append(order)
+            #iclamp = h.IClamp(nearest_section(sec_fraction))
+            #current_input_dict[fov_num][i] = iclamp
+            #pp.pprint(nearest_section.psection()['point_processes'])
+            #raise
+        stat_dict[fov_name]['distance_to_soma'] = dist_list
+        stat_dict[fov_name]['branch_order'] = order_list
+    return stat_dict
+
 
 
 

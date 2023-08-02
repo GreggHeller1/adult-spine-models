@@ -81,6 +81,7 @@ print(os.path.exists(test_path))
 
 soma_path = "/Users/Gregg/code/Adult-Spine-Models/scripts/demo_data/ASC26_cell_3_soma.mat"
 spines_path = "/Users/Gregg/code/Adult-Spine-Models/scripts/demo_data/ASC26_cell_3_spines.mat"
+spines_path = "/Users/Gregg/Dropbox (MIT)/2021 Gregg Sur rotation/ASC_experimental_data/2022-11 Soma Data/ASC15.mat"
 print(os.path.exists(soma_path))
 print(os.path.exists(spines_path))
 
@@ -96,6 +97,10 @@ soma_data = soma
 # + id="82a5927b"
 #data manipulation
 spines = spine_data
+type(spines)
+print(spines[0].shape)
+
+
 print(soma[3])
 print(spines['dend_cell'])
 
@@ -116,8 +121,9 @@ print(spines['dend_cell'])
 
 soma_field_2 = io._todict(soma[2])
 
-ref = spines['dend_cell'][2,0]
-spine_field_2 = spines[ref]#['DSI']
+spine_field_2 = io._todict(soma[2])
+#ref = spine_field_2['dend_cell'][2,0]
+#spine_field_2 = spines[ref]#['DSI']
 
 #print(np.array(field_2))
 #print(field_2['vis_stim_times'])
@@ -307,11 +313,12 @@ dist_means = dist_means/max(dist_means)
 
 # +
 
+    
 plt.plot(size_means, label='weighted by size spines')
 
 plt.plot(dist_means, label='weighted by distance from soma')
 
-plt.plot(means, label='democratic spines simulated response')
+plt.plot(democratic_means, label='democratic spines simulated response')
 plt.plot(soma_means, label='measured soma response')
 plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
 
