@@ -75,6 +75,7 @@ def main_loop():
     }  
     for experiment_id, model_dict in globals['model_correlations_to_soma'].items():
         data_list = []
+        num_significant = 0
         responsiveness = globals['responsive_status'][experiment_id]
         print(f'responsive status part 2: {responsiveness}')
         if responsiveness:
@@ -94,7 +95,11 @@ def main_loop():
             data_list.append(similarity_score)
             sum_correlations[responsive_key][i] += similarity_score
             if p_value <.001:
-                ax.scatter(i, similarity_score+.005, marker='*', c=color_val, label=experiment_id)
+                if num_significant >0:
+                    ax.scatter(i, similarity_score+.005, marker='*', c=color_val)
+                else:
+                    ax.scatter(i, similarity_score+.005, marker='*', c=color_val, label=experiment_id)
+                num_significant += 1
         
         count += 1
         if np.mean(np.array(data_list))>.5:
@@ -107,7 +112,7 @@ def main_loop():
         color_val = colors[responsive_key][counts[responsive_key]]
         mean_correlations = sums/counts[responsive_key]
         label_str = f'{responsive_key} mean similarity'
-        ax.bar(bar_locations, mean_correlations, color = color_val, label= label_str)
+        ax.bar(bar_locations, mean_correlations, color = color_val, alpha = .5, label= label_str)
         
     ax.legend()
     ax.bar(bar_locations, mean_correlations)
@@ -154,7 +159,7 @@ def main_loop():
             
         for i, model_type in enumerate(model_types):
             correlation_value = model_dict[model_type][0]
-            similarity_score = globals['model_similarity_scores'][experiment_id][model_type]/max_similarity_score
+            similarity_score = globals['model_similarity_scores'][experiment_id][model_type]/dem_similarity_score
             p_value = model_dict[model_type][1]
             print(correlation_value)
             #data_list.append(correlation_value)
