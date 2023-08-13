@@ -3,6 +3,7 @@ from src import plotting as plot
 from src import computation as comp
 from src import helper_functions as hf
 from src import config as cfg
+import matplotlib.colors as cm
 
 
 import xarray as xr
@@ -25,11 +26,8 @@ logger.setLevel(logging.WARNING)
 
 
 def init_globals():
-    globals = {
-    'failed_list': [],
-    'errors': {},
-    'model_correlations_to_soma': defaultdict(dict),
-    }
+    globals = defaultdict(dict)
+    globals['failed_list']= []
     return globals
 
 def main_loop():
@@ -43,6 +41,7 @@ def main_loop():
                 unprocessed = True# not (cfg.subfolder_name in dirs)
                 if cfg.re_run or unprocessed:
                     main(filepath, globals)
+                
     else:
         print('Running on single dataset')
         main(cfg.data_path, globals)
@@ -52,36 +51,70 @@ def main_loop():
     io.save_named_iterable_to_json(failed_dirs_errors=globals['errors'])
     
     #bar plots with data points of the correlation for each model
+    #this is sloppy and really should be a more generic plotting function but I'm rushing...
     fig, ax = plt.subplots()
     count = 0
     arbitrary_exp = globals['model_correlations_to_soma'][list(globals['model_correlations_to_soma'].keys())[0]]
     model_types = list(arbitrary_exp.keys())
-    sum_correlations = np.zeros(len(model_types))
     bar_locations = list(range(len(model_types)))
+    num_cells = len(list(globals['model_correlations_to_soma'].keys()))
+
+    colors = {
+        'responsive': [ plt.get_cmap('autumn')(x) for x in np.linspace(0, 1, num_cells+1)],
+        'unresponsive': [ plt.get_cmap('winter')(x) for x in np.linspace(0, 1, num_cells+1)]
+    } 
+
+
+    sum_correlations = {
+        'responsive': np.zeros(len(model_types)),
+        'unresponsive': np.zeros(len(model_types))
+    } 
+    counts = {
+        'responsive': 0,
+        'unresponsive': 0
+    }  
     for experiment_id, model_dict in globals['model_correlations_to_soma'].items():
         data_list = []
+        responsiveness = globals['responsive_status'][experiment_id]
+        print(f'responsive status part 2: {responsiveness}')
+        if responsiveness:
+            responsive_key = 'responsive'
+            color_val = colors[responsive_key][counts[responsive_key]]
+            counts[responsive_key]+=1
+        else:
+            responsive_key = 'unresponsive'
+            color_val = colors[responsive_key][counts[responsive_key]]
+            counts[responsive_key]+=1
         for i, model_type in enumerate(model_types):
             correlation_value = model_dict[model_type][0]
+            similarity_score = globals['model_similarity_scores'][experiment_id][model_type]
             p_value = model_dict[model_type][1]
             print(correlation_value)
-            data_list.append(correlation_value)
-            sum_correlations[i] += correlation_value
+            #data_list.append(correlation_value)
+            data_list.append(similarity_score)
+            sum_correlations[responsive_key][i] += similarity_score
             if p_value <.001:
-                ax.scatter(i, correlation_value+.02, marker='*', c='k')
+                ax.scatter(i, similarity_score+.005, marker='*', c=color_val, label=experiment_id)
         
         count += 1
         if np.mean(np.array(data_list))>.5:
-            ax.plot(bar_locations, data_list, label=experiment_id)
+            ax.plot(bar_locations, data_list, color = color_val)
         else:
-            ax.plot(bar_locations, data_list)
+            ax.plot(bar_locations, data_list, color = color_val)
+        
+    
+    for responsive_key, sums in sum_correlations.items():
+        color_val = colors[responsive_key][counts[responsive_key]]
+        mean_correlations = sums/counts[responsive_key]
+        label_str = f'{responsive_key} mean similarity'
+        ax.bar(bar_locations, mean_correlations, color = color_val, label= label_str)
         
     ax.legend()
-    mean_correlations = sum_correlations/count
     ax.bar(bar_locations, mean_correlations)
     ax.set_xlabel('Model type')
     ax.set_xticks(bar_locations)
     ax.set_xticklabels(model_types, rotation=-40, ha='left')
-    ax.set_ylabel('Correlation to measured soma tuning curve (r value)')
+    ax.set_ylabel('Similarity score to soma tuning curve (dot product)')
     
     figname = 'model_performance_summaries.png'
     fig_path = os.path.join(cfg.collect_summary_at_path, figname)
@@ -91,6 +124,67 @@ def main_loop():
     #want to color/filter these by whether the neuron is responsive or not. 
     #Indicate which ones are significant somehow 
     
+    ##Same fig but normalized to the best response
+    fig, ax = plt.subplots()
+    sum_correlations = {
+        'responsive': np.zeros(len(model_types)),
+        'unresponsive': np.zeros(len(model_types))
+    } 
+    counts = {
+        'responsive': 0,
+        'unresponsive': 0
+    }  
+    for experiment_id, model_dict in globals['model_correlations_to_soma'].items():
+        data_list = []
+        responsiveness = globals['responsive_status'][experiment_id]
+        if responsiveness:
+            responsive_key = 'responsive'
+            color_val = colors[responsive_key][counts[responsive_key]]
+            counts[responsive_key]+=1
+        else:
+            responsive_key = 'unresponsive'
+            color_val = colors[responsive_key][counts[responsive_key]]
+            counts[responsive_key]+=1
+        #trying to get everything on the same page comparison wise I think this makes sense
+        #max_similarity_score = 0
+        #for i, model_type in enumerate(model_types):
+        #    similarity_score = globals['model_similarity_scores'][experiment_id][model_type]
+        #    max_similarity_score = max(similarity_score, max_similarity_score)
+        dem_similarity_score = globals['model_similarity_scores'][experiment_id]['democratic']
+            
+        for i, model_type in enumerate(model_types):
+            correlation_value = model_dict[model_type][0]
+            similarity_score = globals['model_similarity_scores'][experiment_id][model_type]/max_similarity_score
+            p_value = model_dict[model_type][1]
+            print(correlation_value)
+            #data_list.append(correlation_value)
+            data_list.append(similarity_score)
+            sum_correlations[responsive_key][i] += similarity_score
+            if p_value <.001:
+                ax.scatter(i, similarity_score+.005, marker='*', c=color_val, label=experiment_id)
+        
+        count += 1
+        if np.mean(np.array(data_list))>.5:
+            ax.plot(bar_locations, data_list, color = color_val)
+        else:
+            ax.plot(bar_locations, data_list, color = color_val)
+        
+    for responsive_key, sums in sum_correlations.items():
+        color_val = colors[responsive_key][counts[responsive_key]]
+        mean_correlations = sums/counts[responsive_key]
+        label_str = f'{responsive_key} mean similarity'
+        ax.bar(bar_locations, mean_correlations, color = color_val, label= label_str)
+        
+    ax.legend()
+    ax.set_xlabel('Model type')
+    ax.set_xticks(bar_locations)
+    ax.set_xticklabels(model_types, rotation=-40, ha='left')
+    ax.set_ylabel('Normalized similarity score to soma tuning curve (dot product)')
+    
+    figname = 'model_performance_summaries_normalized.png'
+    fig_path = os.path.join(cfg.collect_summary_at_path, figname)
+    print(f'Saving figure to {fig_path}')
+    fig.savefig(fig_path, bbox_inches='tight')
         
 
     
@@ -129,6 +223,9 @@ def main(current_data_path, globals = None):
         soma_path = current_data_path
         soma_data = io.loadmat(soma_path)
         
+        responsive_status = hf.get_responsive_status(soma_data)
+        print(f'responsive status: {hf.get_responsive_status(soma_data)}')
+        
         #Soma tuning curve
         soma_traces = hf.get_traces(soma_data)
         soma_means_normalized, soma_max_amplitude = get_normalized_means(soma_traces)
@@ -157,7 +254,8 @@ def main(current_data_path, globals = None):
             'random_20': {'weight_function': comp.random_20, 'subset':'all'},
         }
         
-        model_correlations_to_soma = defaultdict(dict)
+        model_correlations_to_soma = {}
+        model_similarity_scores = {}
         traces = defaultdict(dict)
         traces[f'soma'] = soma_traces
         
@@ -166,18 +264,22 @@ def main(current_data_path, globals = None):
         label_dict['soma'] = f'soma, Max z score = {soma_max_amplitude}'
         means_normalized['soma'] = soma_means_normalized
         for model_keyword, model_params in model_dict.items():
-            traces, means, max_amplitude = run_subset_model(spine_data, 
+            #boostrap here
+            bootsraps = 1
+            for i in range(bootsraps):
+                traces, means, max_amplitude = run_subset_model(spine_data, 
                                                             weight_function = model_params['weight_function'],
                                                             subset=model_params['subset'])
-            
-            model_corr_to_soma = stats.pearsonr(soma_means_normalized, means)
-                                                                                
+
+                model_corr_to_soma = stats.pearsonr(soma_means_normalized, means)
+                model_similarity_score = comp.compare_tuning_curves(soma_means_normalized, means)
+
             #put the values in the dictionaries to be used in aggregate
             traces[model_keyword] = traces
             means_normalized[model_keyword] = means
             label_dict[model_keyword] = f'{model_keyword}, Corr to soma = {model_corr_to_soma}'
             model_correlations_to_soma[model_keyword] = model_corr_to_soma
-            
+            model_similarity_scores[model_keyword] = model_similarity_score
         #Democratic
         #democratic_model_all_traces = comp.get_summed_trial_sampled_spine_trace(spine_data)
         #sum_spine_sub_traces = comp.select_timesteps(summed_spine_traces_1)
@@ -219,6 +321,8 @@ def main(current_data_path, globals = None):
         #Put the correlations into globals
         ############
         globals['model_correlations_to_soma'][experiment_id] = model_correlations_to_soma
+        globals['model_similarity_scores'][experiment_id] = model_similarity_scores
+        globals['responsive_status'][experiment_id] = responsive_status
         
         
         

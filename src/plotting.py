@@ -24,10 +24,10 @@ from src import helper_functions as hf
 
 
 
-def reorder_directions_for_plotting(array, preferred_direcion_idx=None):
+def reorder_directions_for_plotting(array, preferred_direcion_idx=None, goal_idx = 0):
     if preferred_direcion_idx is None:
         preferred_direcion_idx = np.argmax(array)
-    return np.roll(array, -(preferred_direcion_idx-4)) #-4 because we want to leave the curve largely intact
+    return np.roll(array, -(preferred_direcion_idx-goal_idx)) #-subtracting 8 will center the peak. what happens if this is negative?
 
 
 
@@ -35,18 +35,22 @@ def plot_tuning_curves(ax=None, **kwargs):
     #fig, ax = line_plot_key_labels(ax, **kwargs)
     fig=None
     fig, ax = new_ax(ax)
-    preferred_direction = 4
+    preferred_direction = 0
     for label, means_array in kwargs.items():
-        if 'soma' in label:
+        if ('soma' in label.lower()) and not('to soma' in label.lower()):
             preferred_direction = np.argmax(np.array(means_array))
 
+    num_stims = len(means_array)
+    goal_peak_idx = int(num_stims/2)
+    print(goal_peak_idx)
     for key, means_array in kwargs.items():
-        ordered_response_array = reorder_directions_for_plotting(means_array, preferred_direcion_idx=preferred_direction)
+        ordered_response_array = reorder_directions_for_plotting(means_array, preferred_direcion_idx=preferred_direction, goal_idx = goal_peak_idx)
         ax.plot(ordered_response_array, label=key)
 
     ax.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
     ax.set_xlabel('Direction')
-    ax.set_xticks([0,4,8,12], ['Orthogonal', 'Preferred', 'Orthogonal', 'Anti-preferred'])
+    ax.set_xticks([(goal_peak_idx - num_stims/2)%num_stims,(goal_peak_idx - num_stims/4)%num_stims,goal_peak_idx, (goal_peak_idx + num_stims/4)%num_stims],
+                  ['Anti-preferred', 'Orthogonal', 'Preferred', 'Orthogonal'])
     ax.set_ylabel('Normalized amplitude')
     return fig, ax
 

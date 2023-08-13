@@ -44,6 +44,18 @@ def get_precomputed_tuning_curve(soma_data):
     return np.array(soma_field_2['mean_amp'])
 
 
+
+def get_responsive_status(soma_data):
+    #get preferred orientation
+    soma_field_2 = io._todict(soma_data[2])
+    tuning_curve = get_precomputed_tuning_curve(soma_data)
+    preferred_stim_index = np.argmax(tuning_curve)
+    zeta_results = soma_field_2['ZETA_test_dir'][preferred_stim_index]
+    p_value = io._todict(zeta_results)['dblP']
+    print(p_value)
+    return p_value<.05
+
+
 def get_spine_metadata(spine_data, fov_num = 0):
     ref = spine_data['dend_cell'][3,fov_num]
     spine_field_3 = spine_data[ref]

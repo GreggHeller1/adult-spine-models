@@ -323,7 +323,7 @@ def trial_sampling(spine_data):
 #####################################
 
 def linear_normalization(array_in):
-    zeroed_array = array_in#-min(array_in)
+    zeroed_array = array_in-min(array_in)
     return zeroed_array/max(zeroed_array)
 
 def select_timesteps(traces, first_sample =cfg.first_sample_to_take, last_sample =cfg.last_sample_to_take):
@@ -345,10 +345,18 @@ def compute_tuning_curve(traces):
         means = means.mean(axis=1)
     return means
 
-def compare_tuning_curves(soma_traces, spine_traces):
-    soma_means = compute_tuning_curve(soma_traces)
-    spine_means = compute_tuning_curve(spine_traces)
-    return np.dot(soma_means, spine_means)
+
+def get_and_compare_tuning_curves(traces_1, traces_2):
+    means_1 = compute_tuning_curve(traces_1)
+    means_2 = compute_tuning_curve(traces_2)
+    return compare_tuning_curves(means_1, means_2)
+
+def compare_tuning_curves(means_1, means_2):
+    #first make both unit norm
+    means_1_unit_norm = means_1/np.dot(means_1, means_1)
+    means_2_unit_norm = means_2/np.dot(means_2, means_2)
+    return np.dot(means_1_unit_norm, means_2_unit_norm)
+
 
 #####################
 #Neuron stuff

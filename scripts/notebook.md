@@ -475,6 +475,58 @@ type(fov) is int
 ```
 
 ```python
+a = np.array([0,0,2,0,0,0,1,0,0,0,0,0,0,3,0,0])
 
 ```
 
+
+```python
+np.roll(a, -(np.argmax(a)-7))
+```
+
+```python
+-4%16
+
+```
+
+```python
+import matplotlib.colors as cm
+
+```
+
+```python
+num_cells = 20
+responsive_colors = [ plt.get_cmap('autumn')(x) for x in np.linspace(0, 1, num_cells)]
+unresponsive_colors = [ plt.get_cmap('winter')(x) for x in np.linspace(0, 1, num_cells)]
+#From here https://stackoverflow.com/questions/8931268/using-colormaps-to-set-color-of-line-in-matplotlib 
+```
+
+```python
+responsive_count = 0
+unresponsive_count = 0
+for i in range(num_cells):
+    data = np.random.random(16)
+    if i%2:
+        color_val = responsive_colors[responsive_count]
+        responsive_count+=1
+    else:
+        color_val = unresponsive_colors[unresponsive_count]
+        unresponsive_count+=1
+    plt.plot(data, color=color_val)
+```
+
+```python
+soma_field_2 = io._todict(soma_data[2])
+tuning_curve = hf.get_precomputed_tuning_curve(soma_data)
+preferred_stim_index = np.argmax(tuning_curve)
+zeta_results = soma_field_2['ZETA_test_dir'][preferred_stim_index]
+p_value = io._todict(zeta_results)['dblP']
+```
+
+```python
+print(p_value)
+```
+
+```python
+
+```
