@@ -452,4 +452,47 @@ p_value = io._todict(zeta_results)['dblP']
 
 print(p_value)
 
+from scipy import stats
+from PIL import Image
+import imageio
+
+
+# +
+stats.pearsonr([1,2,3], [4,5,6])
+
+
+
+# +
+test_array = np.random.randint(0,200,(16,16))
+test_array = np.random.rand(16,16)#*30
+data = test_array
+path = 'demo_data/my_image.tiff'
+img1 = Image.fromarray(data)
+img1.save(path)
+test_read = np.array(Image.open(path))
+
+#f1 = list(img1.getdata())
+#f2 = list(img2.getdata())
+#print(f1 == f2)
+#print(f1)
+
+#test_array = np.tile(test_array,(3,1,1))
+#test_array = np.moveaxis(test_array,0, 2)
+#print(test_array.shape)
+#im_pil = Image.fromarray(test_array)
+##from here https://stackoverflow.com/questions/71272571/cant-recover-the-same-numpy-array-from-pil-saved-png-image
+#path = 'demo_data/my_image.Tiff'
+#im_pil.save(f, 'TIFF')
+#plt.imsave(path, test_array, cmap=plt.cm.gray)
+# -
+
+with Image.open(path) as im:
+        test_read = np.array(im)
+test_read.shape
+
+test_read[0,:]
+
+
+test_array[0,:]
+
 
