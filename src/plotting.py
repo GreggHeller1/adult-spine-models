@@ -360,5 +360,57 @@ def get_most_similar_spine(soma_data, all_spine_activity_array, ordering_func = 
 
 
 
+##########################################################################
+#For the main_plotting_loop... should just put that here too??
+
+def plot_all_simulation_scores(df):
+
+    #Just use seaborn you idiot? ugh but the normalization hasn't been done.
+
+    #So we just have to do this part manually
+    exp_ids = df['experiment_id'].unique()
+    for exp_id in exp_ids:
+        df[df['experiment_id']]== df[df['experiment_id']]/sum(df[df['experiment_id']])
+
+    sns.lineplot(data=df.loc[df['group'] == 1], x='block', y='value', hue='cond',
+             palette='Blues', marker='o')
+
+
+def plot_simulation_tuning_curves(df):
+
+        ############
+        #Plots and output - loop through the CSV and produce this
+        ############
+        #unpack the df
+        df_dict = {}
+        for model_type in df['model_keyword (V), stimulus (->)']:
+            df_dict[model_type] = df.loc[:,model_type]
+
+        #Tuning curve plots
+        ############
+        fig, axs = plt.subplots(nrows=4, ncols=1)
+
+        linear_model_sub_dict = {k: df_dict[k] for k in ('soma','democratic', 'spine_size', 'distance_to_soma')}
+        _, ax = plot.plot_tuning_curves(axs[0], **linear_model_sub_dict)
+
+        responsive_model_sub_dict = {label_dict[k]: means_normalized[k] for k in ('soma','democratic', 'unresponsive', 'responsive')}
+        _, ax = plot.plot_tuning_curves(axs[1], **responsive_model_sub_dict)
+
+        size_sub_dict = {label_dict[k]: means_normalized[k] for k in ('soma','top_20_size', 'bottom_20_size', 'random_20')}
+        _, ax = plot.plot_tuning_curves(axs[2], **size_sub_dict)
+
+        dist_sub_dict = {label_dict[k]: means_normalized[k] for k in ('soma','top_20_distance', 'bottom_20_distance', 'random_20')}
+        _, ax = plot.plot_tuning_curves(axs[3], **dist_sub_dict)
+
+        #Save the Plot
+        figname = experiment_id+'_model_tuning_curves.png'
+        fig_path = os.path.join(cfg.collect_summary_at_path, figname)
+        print(f'Saving figure to {fig_path}')
+        fig.savefig(fig_path, bbox_inches='tight')
+
+
+        #Response timing plot
+        ###########
+
 
 

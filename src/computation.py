@@ -219,6 +219,14 @@ def compute_model_output_from_random_sampled_fovs(spine_data,
                                                 integration_function = linear_integration,
                                                 somatic_function = somatic_identity,
                                                 ):
+
+    ##Need to break this into seperate modules. Bootsrapping will be a bit tricky? What if different nonlinearities are better for different runs?
+    #I guess you run them all and then sort it out after.
+    #we dont want to have to save all the model outputs, that will get kinda big
+    #so its ok to bootstrap this function after we have extracted the rele
+    #except a list for each - full prameters sets of weight, integration and somatic pairs. Also should pass in flags for unresponsive and exclude baps here
+
+
     num_directions = len(all_spine_activity_array['directions'])
     num_samples= len(all_spine_activity_array['samples'])
     model_output = xr.DataArray(np.zeros((num_directions, simulated_trials_per_stim, num_samples)),
@@ -241,6 +249,28 @@ def compute_model_output_from_random_sampled_fovs(spine_data,
 
 
     return model_output #should be directions x simulated_trials x samples (like the soma)
+
+
+
+def get_normalized_means(traces):
+    trial_means = compute_tuning_curve(traces)
+    trial_means_normalized = linear_normalization(trial_means)
+    max_amp = np.max(trial_means)
+    return trial_means_normalized, max_amp
+
+
+def run_model(spine_data, spine_activity_array, spines_per_fov_list, weight_function):
+    model_traces = compute_model_output_from_random_sampled_fovs(spine_data,
+                                                                      spine_activity_array,
+                                                                      spines_per_fov_list,
+                                                                      simulated_trials_per_stim=cfg.simulated_trials_per_stim)
+    model_means_normalized, model_max_amplitude = get_normalized_means(model_traces)
+    return model_traces, model_means_normalized, model_max_amplitude
+
+
+def run_subset_model(spine_data, weight_function = democratic_weights, subset='all'):
+    spine_activity_array, spines_per_fov_list = compile_spine_traces(spine_data, subset = subset)
+    return run_model(spine_data, spine_activity_array, spines_per_fov_list, weight_function = weight_function)
 
 
 

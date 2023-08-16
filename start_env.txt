@@ -1,0 +1,12 @@
+#!/usr/bin/env bash --init-file
+eval "$(conda shell.bash hook)"
+pwd
+ABSOLUTE_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+echo "Script is found at $ABSOLUTE_PATH"
+DIRPATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)
+echo "Moving to directory $DIRPATH/scripts"
+cd "$DIRPATH/scripts"
+echo "Now in "&& pwd
+eval "$(conda shell.bash hook)"
+conda activate adult_spine_models
+conda info --envs

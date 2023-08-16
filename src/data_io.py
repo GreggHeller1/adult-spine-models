@@ -70,10 +70,10 @@ def _loadmat(filename):
 
 
 
-
 ################
 # data out
 #################
+
 
 def save_named_iterable_to_json(**kwargs):
     for key, value in kwargs.items():
@@ -85,6 +85,14 @@ def save_named_iterable_to_json(**kwargs):
             os.makedirs(summary_path)
         with open(file_path, "w") as f:
             json.dump(value, f, indent=4)
+
+
+def save_csv(df, name_keywords=''):
+    dfname = f'{name_keywords}.csv'
+    df_path = os.path.join(cfg.collect_summary_at_path, dfname)
+    print(f'Saving dataframe to {df_path}')
+    df.to_csv(df_path)
+
 
 
 def save_plot(fig, current_data_dir):
