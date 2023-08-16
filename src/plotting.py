@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+import seaborn as sns
 
 from src import config as cfg
 from src import computation as comp
@@ -37,7 +39,7 @@ def plot_tuning_curves(ax=None, **kwargs):
     fig, ax = new_ax(ax)
     preferred_direction = 0
     for label, means_array in kwargs.items():
-        if ('soma' in label.lower()) and not('to soma' in label.lower()):
+        if ('soma' in label.lower()) and not('to_soma' in label.lower()):
             preferred_direction = np.argmax(np.array(means_array))
 
     num_stims = len(means_array)
@@ -363,47 +365,80 @@ def get_most_similar_spine(soma_data, all_spine_activity_array, ordering_func = 
 ##########################################################################
 #For the main_plotting_loop... should just put that here too??
 
+def plot_model_simulation_scores(df, prefix=''):
+    fig, ax = plt.subplots()
+    sns.lineplot(data=df.loc[df['responsive_status'] == 'unresponsive'], x='model_type', y='model_soma_similarity_score', hue='experiment_id',
+                 palette='Blues', marker='o')
+    sns.lineplot(data=df.loc[df['responsive_status'] == 'responsive'], x='model_type', y='model_soma_similarity_score', hue='experiment_id',
+                 palette='Reds', marker='o')
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+
+    ## Get the legend handles and add them to plt.legend, so that the right handles are addigned
+    #legend_handles, _= plt.gca().get_legend_handles_labels()
+    #plt.legend(handles = legend_handles, loc='right',
+    #           labels=['Group 1: C1', 'Group 1: C2', 'Group 2: C1', 'Group 2: C2'])
+
+    figname = f'{prefix}{"-"*bool(prefix)}model_performance_summaries.png'
+    fig_path = os.path.join(cfg.collect_summary_at_path, figname)
+    print(f'Saving figure to {fig_path}')
+    fig.savefig(fig_path, bbox_inches='tight')
+
+
 def plot_all_simulation_scores(df):
 
     #Just use seaborn you idiot? ugh but the normalization hasn't been done.
 
+    #plot_model_simulation_scores(df)
+
     #So we just have to do this part manually
     exp_ids = df['experiment_id'].unique()
     for exp_id in exp_ids:
-        df[df['experiment_id']]== df[df['experiment_id']]/sum(df[df['experiment_id']])
+        bool_index = df['experiment_id'] == exp_id
+        exp_df = df[bool_index]
+        democratic_index = exp_df['model_type'] == 'democratic'
+        print(democratic_index)
+        print('%%%%%%')
+        democratic_sim_score = float(exp_df[democratic_index]['model_soma_similarity_score'])
+        print(democratic_sim_score)
+        exp_df['model_soma_similarity_score'] = exp_df['model_soma_similarity_score']/democratic_sim_score
+        print(exp_df['model_soma_similarity_score'])
+        #put it back in the larger data frame
+        df[bool_index] = exp_df
 
-    sns.lineplot(data=df.loc[df['group'] == 1], x='block', y='value', hue='cond',
-             palette='Blues', marker='o')
+    plot_model_simulation_scores(df, prefix='normalized')
 
 
-def plot_simulation_tuning_curves(df):
+def plot_simulation_tuning_curves(df, prefix=''):
 
         ############
         #Plots and output - loop through the CSV and produce this
         ############
         #unpack the df
         df_dict = {}
-        for model_type in df['model_keyword (V), stimulus (->)']:
-            df_dict[model_type] = df.loc[:,model_type]
+        print(df.head())
+        for index, row in df.iterrows():
+            df_dict[index] = row
+            print(row)
 
         #Tuning curve plots
         ############
         fig, axs = plt.subplots(nrows=4, ncols=1)
 
         linear_model_sub_dict = {k: df_dict[k] for k in ('soma','democratic', 'spine_size', 'distance_to_soma')}
-        _, ax = plot.plot_tuning_curves(axs[0], **linear_model_sub_dict)
+        _, ax = plot_tuning_curves(axs[0], **linear_model_sub_dict)
 
-        responsive_model_sub_dict = {label_dict[k]: means_normalized[k] for k in ('soma','democratic', 'unresponsive', 'responsive')}
-        _, ax = plot.plot_tuning_curves(axs[1], **responsive_model_sub_dict)
+        responsive_model_sub_dict = {k: df_dict[k] for k in ('soma','democratic', 'unresponsive', 'responsive')}
+        _, ax = plot_tuning_curves(axs[1], **responsive_model_sub_dict)
 
-        size_sub_dict = {label_dict[k]: means_normalized[k] for k in ('soma','top_20_size', 'bottom_20_size', 'random_20')}
-        _, ax = plot.plot_tuning_curves(axs[2], **size_sub_dict)
+        size_sub_dict = {k: df_dict[k] for k in ('soma','top_20_size', 'bottom_20_size', 'random_20')}
+        _, ax = plot_tuning_curves(axs[2], **size_sub_dict)
 
-        dist_sub_dict = {label_dict[k]: means_normalized[k] for k in ('soma','top_20_distance', 'bottom_20_distance', 'random_20')}
-        _, ax = plot.plot_tuning_curves(axs[3], **dist_sub_dict)
+        dist_sub_dict = {k: df_dict[k] for k in ('soma','top_20_distance', 'bottom_20_distance', 'random_20')}
+        _, ax = plot_tuning_curves(axs[3], **dist_sub_dict)
 
         #Save the Plot
-        figname = experiment_id+'_model_tuning_curves.png'
+        figname = f"{prefix}{'_'*bool(prefix)}model_tuning_curves.png"
         fig_path = os.path.join(cfg.collect_summary_at_path, figname)
         print(f'Saving figure to {fig_path}')
         fig.savefig(fig_path, bbox_inches='tight')

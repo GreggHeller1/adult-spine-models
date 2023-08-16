@@ -56,6 +56,17 @@ def main_loop():
     df = pd.DataFrame(globals['data_dict_list'])
     io.save_csv(df, name_keywords='single_neuron_simulation_scores')
 
+
+def tuning_curve_df_helper(model_keyword, means):
+    result_list = [model_keyword]
+    column_list = ['model_keyword (V), stimulus (->)']
+    for i, xarray_mean in enumerate(means):
+
+        #can add stim descriptions here
+        #print(xarray_mean.Coordinates)
+        column_list.append(float(xarray_mean.directions))#need to make this label more general
+        result_list.append(float(xarray_mean.values))
+    return column_list, result_list
     
 def main(current_data_path, globals = None):
     if globals is None:
@@ -108,10 +119,15 @@ def main(current_data_path, globals = None):
         #traces[f'soma'] = soma_traces
         
         simulation_means_list = []
-        means_normalized = defaultdict(dict)
-        label_dict = {}
-        label_dict['soma'] = f'soma, Max z score = {soma_max_amplitude}'
-        means_normalized['soma'] = soma_means_normalized
+        df_row = ['soma']
+        df_row.extend(list(soma_means_normalized))
+        print(df_row)
+        simulation_means_list.append(df_row)
+            
+        #means_normalized = defaultdict(dict)
+        #label_dict = {}
+        #label_dict['soma'] = f'soma, Max z score = {soma_max_amplitude}'
+        #means_normalized['soma'] = soma_means_normalized
         for model_keyword, model_params in model_dict.items():
             #boostrap here
             bootsraps = 1
@@ -133,14 +149,7 @@ def main(current_data_path, globals = None):
             #put the means into the model_dict list which will be saved as a seperate CSV for each cell
             ############
             
-            result_list = [model_keyword]
-            column_list = ['model_keyword (V), stimulus (->)']
-            for i, xarray_mean in enumerate(means):
-                
-                #can add stim descriptions here
-                #print(xarray_mean.Coordinates)
-                column_list.append(float(xarray_mean.directions))#need to make this label more general
-                result_list.append(float(xarray_mean.values))
+            column_list, result_list = tuning_curve_df_helper(model_keyword, means)
             simulation_means_list.append(result_list)
 
             
@@ -152,12 +161,13 @@ def main(current_data_path, globals = None):
                 'model_correlation_to_soma_r': model_corr_to_soma[0],
                 'model_correlation_to_soma_p': model_corr_to_soma[1],
                 'model_soma_similarity_score': model_similarity_score,
-                'responsive_status': responsive_status #This seems a little out of place here... will be repeated a lot, doesn't change with model
-                #maybe better to put them in two seperate dataframes? easier to just consider responsive and not have to filter out...but theres also an easy way to subset in pandas
+                'responsive_status': responsive_status
             }
             
             globals['data_dict_list'].append(simulation_scores_dict)
             
+        globals['data_dict_list'].append(simulation_scores_dict)
+
         #save the means for each simulation as a csv as well 
         df = pd.DataFrame(simulation_means_list, columns = column_list)
         name_str = f'{experiment_id}_simulation_mean_stim_response'

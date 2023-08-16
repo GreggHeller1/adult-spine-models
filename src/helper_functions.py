@@ -53,7 +53,10 @@ def get_responsive_status(soma_data):
     zeta_results = soma_field_2['ZETA_test_dir'][preferred_stim_index]
     p_value = io._todict(zeta_results)['dblP']
     print(p_value)
-    return p_value<.05
+    responsive_status = 'unresponsive'
+    if p_value<.05:
+        responsive_status = 'responsive'
+    return responsive_status
 
 
 def get_spine_metadata(spine_data, fov_num = 0):

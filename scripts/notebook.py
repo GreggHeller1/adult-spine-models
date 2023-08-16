@@ -457,7 +457,6 @@ from PIL import Image
 import imageio
 
 
-# +
 stats.pearsonr([1,2,3], [4,5,6])
 
 
@@ -495,4 +494,29 @@ test_read[0,:]
 
 test_array[0,:]
 
+import pandas as pd
+import seaborn as sns
 
+
+fullpath = "/Users/Gregg/Dropbox (MIT)/2021 Gregg Sur rotation/ASC_experimental_data/adult_spine_model_results/single_neuron_simulation_scores.csv"
+df = pd.read_csv(fullpath, index_col=0)
+df.head()
+
+data = {'group': [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2],
+        'block': [1, 1, 2, 2, 3, 3, 1, 1, 2, 2, 3, 3],
+        'cond': ['c1', 'c2', 'c1', 'c2', 'c1', 'c2', 'c1', 'c2', 'c1', 'c2', 'c1', 'c2'],
+        'value': [1, 2, 1.2, 2.1, 1.1, 2.2, 3, 4, 3.3, 4.1, 3.1, 4]}
+df_2=pd.DataFrame(data)
+df_2.head()
+
+# +
+sns.lineplot(data=df.loc[df['unrespons'] == 1], x='block', y='value', hue='cond',
+             palette='Blues', marker='o')
+sns.lineplot(data=df.loc[df['group'] == 2], x='block', y='value', hue='cond',
+             palette='Reds', marker='o')
+
+## Get the legend handles and add them to plt.legend, so that the right handles are addigned
+legend_handles, _= plt.gca().get_legend_handles_labels()
+plt.legend(handles = legend_handles, title='Legend', loc='right',
+           labels=['Group 1: C1', 'Group 1: C2', 'Group 2: C1', 'Group 2: C2'])
+plt.show()
