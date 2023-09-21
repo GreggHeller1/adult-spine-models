@@ -41,22 +41,26 @@ def get_spine_activity(spine_data, fov_num = 0):
 
 def get_precomputed_tuning_curve(soma_data):
     soma_field_2 = io._todict(soma_data[2])
-    return np.array(soma_field_2['mean_amp'])
+    return np.array(soma_field_2['median_amp_baps_excluded'])
 
-
+def include_soma(soma_data):
+    soma_field_2 = io._todict(soma_data[2])
+    return bool(soma_field_2['include'])
 
 def get_responsive_status(soma_data):
     #get preferred orientation
     soma_field_2 = io._todict(soma_data[2])
-    tuning_curve = get_precomputed_tuning_curve(soma_data)
-    preferred_stim_index = np.argmax(tuning_curve)
-    zeta_results = soma_field_2['ZETA_test_dir'][preferred_stim_index]
-    p_value = io._todict(zeta_results)['dblP']
-    print(p_value)
-    responsive_status = 'unresponsive'
-    if p_value<.05:
-        responsive_status = 'responsive'
-    return responsive_status
+    return bool(soma_field_2['responsive'])
+
+    #tuning_curve = get_precomputed_tuning_curve(soma_data)
+    #preferred_stim_index = np.argmax(tuning_curve)
+    #zeta_results = soma_field_2['ZETA_test_dir'][preferred_stim_index]
+    #p_value = io._todict(zeta_results)['dblP']
+    #print(p_value)
+    #responsive_status = 'unresponsive'
+    #if p_value<.05:
+    #    responsive_status = 'responsive'
+    #return responsive_status
 
 
 def get_spine_metadata(spine_data, fov_num = 0):
@@ -95,9 +99,41 @@ def get_fov_name(spine_data, fov_num = 0):
     fov_name = ''.join(chr(i[0]) for i in ascii_list)
     return fov_name
 
+
+def get_bap_trials(spine_data, fov_num = 0):
+    metadata_dict = get_spine_metadata(spine_data, fov_num)
+    return get_bap_trials_meta(metadata_dict)
+
+def get_bap_trials_meta(metadata_dict):
+    return metadata_dict['bap_trials']
+
+
+def get_presentation_num(fov_activity_meta):
+    return shape(fov_activity_meta['trial_amp'])[2]
+
+def get_stim_num(fov_activity_meta):
+    return shape(fov_activity_meta['trial_amp'])[1]
+
+
 def get_branch_order(spine_data, fov_num = 0):
     metadata_dict = get_spine_metadata(spine_data, fov_num)
     return metadata_dict['structural_data']['order'][0][0]
+
+
+
+def spines_dist_from_root(fov_metadata):
+    num_spines = hf.get_num_spines_in_fov(fov_metadata)
+    fov_dist = fov_metadata['structural_data']['DistanceFromRoot_um'][0][0]
+    spines_dist = [fov_dist]*num_spines
+    return spines_dist
+
+def spines_size(fov_metadata):
+    return list(fov_metadata['spine_size']) #there may need to be a [0] here...
+
+def spines_responsiveness(fov_metadata):
+    return list(fov_metadata['responsive']).astype(int)
+
+
 
 def get_dist_from_root(spine_data, fov_num = 0):
     metadata_dict = get_spine_metadata(spine_data, fov_num)

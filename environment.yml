@@ -1,4 +1,4 @@
-name: base
+name: adult-spine-models
 channels:
   - https://repo.continuum.io/pkgs/free
   - anaconda-fusion

@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import seaborn as sns
+import functools
 
 from src import config as cfg
 from src import computation as comp
@@ -115,6 +116,9 @@ def plot_activity_plots(selected_timesteps):
 
 def flatten_for_image(d3_array):
     return d3_array.reshape(d3_array.shape[0]*d3_array.shape[1], d3_array.shape[2])
+
+
+
 
 
 
@@ -365,31 +369,62 @@ def get_most_similar_spine(soma_data, all_spine_activity_array, ordering_func = 
 ##########################################################################
 #For the main_plotting_loop... should just put that here too??
 
+def plot_decorator(plot_func):
+    @functools.wraps(plot_func)
+    def wrapper_decorator(*args, **kwargs):
+        # Do something before
+        fig, ax = plt.subplots()
+
+        #run the function
+        prefix = plot_func(*args, **kwargs)
+
+        #do something after
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+
+        ## Get the legend handles and add them to plt.legend, so that the right handles are addigned
+        #legend_handles, _= plt.gca().get_legend_handles_labels()
+        #plt.legend(handles = legend_handles, loc='right',
+        #           labels=['Group 1: C1', 'Group 1: C2', 'Group 2: C1', 'Group 2: C2'])
+
+        figname = f'{prefix}{"-"*bool(prefix)}model_performance_summaries.png'
+        fig_path = os.path.join(cfg.collect_summary_at_path, figname)
+        print(f'Saving figure to {fig_path}')
+        fig.savefig(fig_path, bbox_inches='tight')
+        return value
+    return wrapper_decorator
+
+    
+
+
 def plot_model_simulation_scores(df, prefix=''):
-    fig, ax = plt.subplots()
     sns.lineplot(data=df.loc[df['responsive_status'] == 'unresponsive'], x='model_type', y='model_soma_similarity_score', hue='experiment_id',
                  palette='Blues', marker='o')
     sns.lineplot(data=df.loc[df['responsive_status'] == 'responsive'], x='model_type', y='model_soma_similarity_score', hue='experiment_id',
                  palette='Reds', marker='o')
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    
+    return prefix
 
+@plot_decorator
+def plot_1(df,  prefix='plot1'):
+    my_palette = [cfg.responsive_color, cfg.unresponsive_color]
+    sns.violinplot(data=df, x='responsive_status', y='model_soma_similarity_score', hue='responsive_status', order=['unresponsive', 'responsive'], hue_order=None, 
+        bw='scott', cut=2, scale='area', scale_hue=True, gridsize=100, width=0.8, inner='box', 
+        split=False, dodge=True, orient=None, linewidth=None, color=None, palette=sns.color_palette(my_palette, 2), saturation=0.75)
 
-    ## Get the legend handles and add them to plt.legend, so that the right handles are addigned
-    #legend_handles, _= plt.gca().get_legend_handles_labels()
-    #plt.legend(handles = legend_handles, loc='right',
-    #           labels=['Group 1: C1', 'Group 1: C2', 'Group 2: C1', 'Group 2: C2'])
-
-    figname = f'{prefix}{"-"*bool(prefix)}model_performance_summaries.png'
-    fig_path = os.path.join(cfg.collect_summary_at_path, figname)
-    print(f'Saving figure to {fig_path}')
-    fig.savefig(fig_path, bbox_inches='tight')
-
+    swarmplot(data=df, x='responsive_status', y='model_soma_similarity_score', hue='responsive_status', order=['unresponsive', 'responsive'], hue_order=None, dodge=False, 
+        orient=None, color=None, palette=sns.color_palette(my_palette, 2), size=5, edgecolor='gray', linewidth=0, hue_norm=None, 
+        native_scale=False, formatter=None, legend='auto', warn_thresh=0.05, ax=None, **kwargs)
 
 def plot_all_simulation_scores(df):
 
     #Just use seaborn you idiot? ugh but the normalization hasn't been done.
 
-    #plot_model_simulation_scores(df)
+    #first plot: democratic_scores split by soma repsonsiveness
+    plot_1(df[df['model_type']=='democratic'])
+
+
+    #second_plot: 
 
     #So we just have to do this part manually
     exp_ids = df['experiment_id'].unique()
@@ -447,5 +482,18 @@ def plot_simulation_tuning_curves(df, prefix=''):
         #Response timing plot
         ###########
 
+def save_trace_image(traces, prefix=''):
+    fig, ax = plot.new_ax()
+    
+    selected_timesteps = comp.select_timesteps(np.array(traces))
+    new_idx = sort_within_all_stims(selected_timesteps, sort_by_mean_amp)#, plot.sort_by_mean_amp)
+    ordered_traces = use_as_index(new_idx, selected_timesteps)
+
+    ax.imshow(flatten_for_image(ordered_traces), aspect='auto')
+
+    figname = f'{prefix}{"-"*bool(prefix)}_trace_image.png'
+    fig_path = os.path.join(cfg.collect_summary_at_path, figname)
+    print(f'Saving figure to {fig_path}')
+    fig.savefig(fig_path, bbox_inches='tight')
 
 
