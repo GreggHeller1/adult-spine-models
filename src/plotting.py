@@ -415,14 +415,14 @@ def plot_1(df,  prefix='plot1'):
     swarmplot(data=df, x='responsive_status', y='model_soma_similarity_score', hue='responsive_status', order=['unresponsive', 'responsive'], hue_order=None, dodge=False, 
         orient=None, color=None, palette=sns.color_palette(my_palette, 2), size=5, edgecolor='gray', linewidth=0, hue_norm=None, 
         native_scale=False, formatter=None, legend='auto', warn_thresh=0.05, ax=None, **kwargs)
+    return prefix
+
+
 
 def plot_all_simulation_scores(df):
 
-    #Just use seaborn you idiot? ugh but the normalization hasn't been done.
-
     #first plot: democratic_scores split by soma repsonsiveness
     plot_1(df[df['model_type']=='democratic'])
-
 
     #second_plot: 
 
