@@ -31,7 +31,7 @@ def _all_idx_to_fov_idx_mapping(spine_data):
     return mapping_dict
 
 def get_num_spines_in_fov(fov_activity_meta):
-    return len(list(fov_activity_meta['spine_size'])[0])
+    return len(list(fov_activity_meta['spine_size'])[0]) #spine_size, this is good and from kyle in imageJx - SpineArea is poorly computed by Gregg
 
 def get_spine_activity(spine_data, fov_num = 0):
     ref = spine_data['dend_cell'][2,fov_num]
@@ -41,11 +41,12 @@ def get_spine_activity(spine_data, fov_num = 0):
 
 def get_precomputed_tuning_curve(soma_data):
     soma_field_2 = io._todict(soma_data[2])
-    return np.array(soma_field_2['median_amp_baps_excluded'])
+    return np.array(soma_field_2['median_amp'])
 
 def include_soma(soma_data):
-    soma_field_2 = io._todict(soma_data[2])
-    return bool(soma_field_2['include'])
+    soma_field_3 = io._todict(soma_data[3])
+    return bool(soma_field_3['included'])
+
 
 def get_responsive_status(soma_data):
     #get preferred orientation
@@ -105,14 +106,16 @@ def get_bap_trials(spine_data, fov_num = 0):
     return get_bap_trials_meta(metadata_dict)
 
 def get_bap_trials_meta(metadata_dict):
-    return metadata_dict['bap_trials']
+    #print(metadata_dict.keys())
+    return metadata_dict['BAP_trials']
 
 
 def get_presentation_num(fov_activity_meta):
-    return shape(fov_activity_meta['trial_amp'])[2]
+    return fov_activity_meta['trial_amp'].shape[0]
+
 
 def get_stim_num(fov_activity_meta):
-    return shape(fov_activity_meta['trial_amp'])[1]
+    return fov_activity_meta['trial_amp'].shape[1]
 
 
 def get_branch_order(spine_data, fov_num = 0):
@@ -121,17 +124,17 @@ def get_branch_order(spine_data, fov_num = 0):
 
 
 
-def spines_dist_from_root(fov_metadata):
-    num_spines = hf.get_num_spines_in_fov(fov_metadata)
+def spines_dist_from_root(fov_activity, fov_metadata):
+    num_spines = get_num_spines_in_fov(fov_metadata)
     fov_dist = fov_metadata['structural_data']['DistanceFromRoot_um'][0][0]
     spines_dist = [fov_dist]*num_spines
     return spines_dist
 
-def spines_size(fov_metadata):
-    return list(fov_metadata['spine_size']) #there may need to be a [0] here...
+def spines_size(fov_activity, fov_metadata):
+    return list(fov_metadata['spine_size'])[0].tolist() #strange syntax here because it needs to return a list... must be a better way but this works
 
-def spines_responsiveness(fov_metadata):
-    return list(fov_metadata['responsive']).astype(int)
+def spines_responsiveness(fov_activity, fov_metadata):
+    return list(fov_activity['responsive'])[0].tolist()
 
 
 

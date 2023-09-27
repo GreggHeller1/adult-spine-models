@@ -375,8 +375,12 @@ def plot_decorator(plot_func):
         # Do something before
         fig, ax = plt.subplots()
 
+        print("###########################################################")
+        print('')
+        print('Creating next plot')
         #run the function
-        prefix = plot_func(*args, **kwargs)
+        prefix = plot_func(*args, fig=fig, ax=ax,  **kwargs)
+        print(f'Finished with {prefix}')
 
         #do something after
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
@@ -391,58 +395,214 @@ def plot_decorator(plot_func):
         fig_path = os.path.join(cfg.collect_summary_at_path, figname)
         print(f'Saving figure to {fig_path}')
         fig.savefig(fig_path, bbox_inches='tight')
-        return value
+        return fig, ax
     return wrapper_decorator
 
     
 
-
-def plot_model_simulation_scores(df, prefix=''):
-    sns.lineplot(data=df.loc[df['responsive_status'] == 'unresponsive'], x='model_type', y='model_soma_similarity_score', hue='experiment_id',
+@plot_decorator
+def plot_model_simulation_scores(df,  prefix='plot2', fig=None, ax=None):
+    sns.lineplot(data=df.loc[df['responsive_status'] == False], x='nickname', y='model_soma_similarity_score', hue='experiment_id',
                  palette='Blues', marker='o')
-    sns.lineplot(data=df.loc[df['responsive_status'] == 'responsive'], x='model_type', y='model_soma_similarity_score', hue='experiment_id',
+    sns.lineplot(data=df.loc[df['responsive_status'] == True], x='nickname', y='model_soma_similarity_score', hue='experiment_id',
                  palette='Reds', marker='o')
-    
+    plt.setp( ax.xaxis.get_majorticklabels(), rotation=-45, ha="left", rotation_mode="anchor") #from https://stackoverflow.com/questions/28615887/how-to-move-a-tick-label-in-matplotlib
+    return prefix
+
+
+@plot_decorator
+def plot_4(df,  prefix='plot4', fig=None, ax=None):
+    #Democratic, distance, size
+    palette_colors = [cfg.colors['unresponsive'], cfg.colors['responsive']]
+    prefix = my_violin_swarm(df,  x='weights', y='model_soma_similarity_score',
+                            prefix=prefix, fig=fig, ax=ax,
+                            palette=palette_colors,
+                            #order=['resp_only', 'democratic_weights', 'unresp_only'],
+                            alpha= .6,
+                            include_line = False,
+                            hue = 'responsive_status',
+                            split=True
+                            )
     return prefix
 
 @plot_decorator
-def plot_1(df,  prefix='plot1'):
-    my_palette = [cfg.responsive_color, cfg.unresponsive_color]
-    sns.violinplot(data=df, x='responsive_status', y='model_soma_similarity_score', hue='responsive_status', order=['unresponsive', 'responsive'], hue_order=None, 
-        bw='scott', cut=2, scale='area', scale_hue=True, gridsize=100, width=0.8, inner='box', 
-        split=False, dodge=True, orient=None, linewidth=None, color=None, palette=sns.color_palette(my_palette, 2), saturation=0.75)
+def plot_4_2(df,  prefix='plot4', fig=None, ax=None):
+    #Democratic, distance, size
+    palette_colors = [cfg.colors['unresponsive'], cfg.colors['responsive']]
+    prefix = my_violin_swarm(df,  x='weights', y='model_soma_similarity_score',
+                            prefix=prefix, fig=fig, ax=ax,
+                            palette=palette_colors,
+                            #order=['resp_only', 'democratic_weights', 'unresp_only'],
+                            alpha= .6,
+                            include_line = False,
+                            hue = 'responsive_status',
+                            split=False
+                            )
+    return prefix
 
-    swarmplot(data=df, x='responsive_status', y='model_soma_similarity_score', hue='responsive_status', order=['unresponsive', 'responsive'], hue_order=None, dodge=False, 
-        orient=None, color=None, palette=sns.color_palette(my_palette, 2), size=5, edgecolor='gray', linewidth=0, hue_norm=None, 
-        native_scale=False, formatter=None, legend='auto', warn_thresh=0.05, ax=None, **kwargs)
+@plot_decorator
+def plot_3(df,  prefix='plot3', fig=None, ax=None):
+    #Democratic, distance, size
+    print(df.head())
+    palette_colors = [cfg.colors['unresponsive'], cfg.colors['responsive']]
+    prefix = my_violin_swarm(df,  x='weights', y='model_soma_similarity_score',
+                            prefix=prefix, fig=fig, ax=ax,
+                            palette=palette_colors,
+                            #order=['democratic_weights', 'size_weights', 'dist_weights'],
+                            alpha= .6,
+                            include_line = False,
+                            hue = 'responsive_status',
+                            split=True
+                            )
+    return prefix
+
+@plot_decorator
+def plot_3_2(df,  prefix='plot3', fig=None, ax=None):
+    #Democratic, distance, size
+    print(df.head())
+    palette_colors = [cfg.colors['unresponsive'], cfg.colors['responsive']]
+    prefix = my_violin_swarm(df,  x='weights', y='model_soma_similarity_score',
+                            prefix=prefix, fig=fig, ax=ax,
+                            palette=palette_colors,
+                            #order=['democratic_weights', 'size_weights', 'dist_weights'],
+                            alpha= .6,
+                            include_line = False,
+                            hue = 'responsive_status',
+                            split=False
+                            )
+    return prefix
+
+@plot_decorator
+def plot_2(df,  prefix='plot2', fig=None, ax=None):
+    palette_colors = [cfg.colors['baps_trials_only'], cfg.colors['responsive'], cfg.colors['no_bap_trials']]
+    prefix = my_violin_swarm(df,  x='trial_subset', y='model_soma_similarity_score',
+                            prefix=prefix, fig=fig, ax=ax,
+                            palette=palette_colors,
+                            order=['baps_trials_only', 'all_trials', 'no_bap_trials'],
+                            alpha= .6,
+                            include_line = False,
+                            )
+    return prefix
+
+@plot_decorator
+def plot_1(df,  prefix='plot1', fig=None, ax=None):
+    palette_colors = [cfg.colors['responsive'], cfg.colors['unresponsive']]
+    prefix = my_violin_swarm(df,  x='responsive_status', y='model_soma_similarity_score',
+                            prefix=prefix, fig=fig, ax=ax,
+                            palette=palette_colors,
+                            alpha=.6,
+                            order=[True, False],
+                            )
     return prefix
 
 
+def my_violin_swarm(df, x, y, prefix='', fig=None, ax=None, alpha=.4, palette=None,
+                    cut=2, linewidth_vi=4, linewidth_sw=1, size=15, color_sw='k', order=None,
+                    include_swarm = True,
+                    include_line = False,
+                    hue=None, split=False
+                    ):
+    if not(palette is None):
+        palette = sns.color_palette(palette, len(palette))
+
+    #sns.violinplot(data=df, x='responsive_status', y='model_soma_similarity_score')
+    sns.violinplot(data=df, x=x, y=y, palette=palette, hue=hue, split=split,
+                   saturation=.75, cut=cut, linewidth=linewidth_vi,
+                   order=order, hue_order=order)
+    for violin in ax.collections[::]:
+        violin.set_alpha(alpha)
+    #sns.violinplot(data=df, x='responsive_status', y='model_soma_similarity_score', hue='responsive_status', order=['responsive', 'unresponsive'], hue_order=None,
+    #    bw='scott', cut=0, scale='area', scale_hue=True, gridsize=100, width=0.8, inner='box',
+    #    split=False, dodge=True, orient=None, linewidth=None, color='r', palette='Reds', saturation=0.75)
+    #Pallette - sns.color_palette(my_palette, 2)
+    if include_swarm:
+        sns.stripplot(data=df,  x=x, y=y, marker="x", linewidth=linewidth_sw, size=size, color=color_sw, order=order)#)# , , )#, order=['responsive', 'unresponsive'])
+    #sns.swarmplot(data=df, x='responsive_status', y='model_soma_similarity_score', hue='responsive_status', order=['responsive', unresponsive], hue_order=None, dodge=False,
+    #    orient=None, color=None, palette=sns.color_palette(my_palette, 2), size=5, edgecolor='gray', linewidth=0, hue_norm=None,
+    #    native_scale=False, formatter=None, legend='auto', warn_thresh=0.05, ax=None, **kwargs)
+
+    if include_line:
+        sns.lineplot(data=df,  x=x, y=y, hue='experiment_id',
+                 color=color_sw)#, order=order)
+    return prefix
 
 def plot_all_simulation_scores(df):
 
     #first plot: democratic_scores split by soma repsonsiveness
-    plot_1(df[df['model_type']=='democratic'])
 
-    #second_plot: 
+    #plot_1(df[(df['weights']=='democratic_weights') & (df['trial_subset']=='all_trials')])
 
-    #So we just have to do this part manually
+
+    #second_plot:
+    #normalize the similarity scores first
     exp_ids = df['experiment_id'].unique()
     for exp_id in exp_ids:
         bool_index = df['experiment_id'] == exp_id
         exp_df = df[bool_index]
-        democratic_index = exp_df['model_type'] == 'democratic'
-        print(democratic_index)
-        print('%%%%%%')
+        democratic_index = (df['weights']=='democratic_weights') & (df['trial_subset']=='all_trials')
+        #print(democratic_index)
+        #print('%%%%%%')
         democratic_sim_score = float(exp_df[democratic_index]['model_soma_similarity_score'])
-        print(democratic_sim_score)
-        exp_df['model_soma_similarity_score'] = exp_df['model_soma_similarity_score']/democratic_sim_score
-        print(exp_df['model_soma_similarity_score'])
+        #print(democratic_sim_score)
+        exp_df.loc[:,'model_soma_similarity_score'] = exp_df.loc[:,'model_soma_similarity_score']/democratic_sim_score
+        #must use .loc when setting so it doesn't copy the column
+
+        #print(exp_df['model_soma_similarity_score'])
         #put it back in the larger data frame
         df[bool_index] = exp_df
 
-    plot_model_simulation_scores(df, prefix='normalized')
 
+    #plot_model_simulation_scores(df, prefix='normalized')
+    #plot_model_simulation_scores(df[df['trial_subset']=='all_trials'], prefix='normalized2')
+
+    plot_2(df[(df['weights']=='democratic_weights')
+           & (df['responsive_status']==True)
+           ], prefix = 'plot2R')
+
+    plot_2(df[(df['weights']=='democratic_weights')
+           & (df['responsive_status']==True)
+           & ((df['experiment_id']=='ASC16')
+           | (df['experiment_id']=='ASC20')
+           | (df['experiment_id']=='ASC28 cell 3')
+           | (df['experiment_id']=='ASC22'))
+           ], prefix = 'plot2R')
+
+    plot_3(df[
+               ((df['weights']=='democratic_weights')
+               | (df['weights']=='size_weights')
+               | (df['weights']=='dist_weights'))
+               & (df['trial_subset']=='all_trials')
+               ])
+
+    plot_3_2(df[
+           ((df['weights']=='democratic_weights')
+           | (df['weights']=='size_weights')
+           | (df['weights']=='size_AND_dist')
+           | (df['weights']=='dist_weights'))
+           & (df['trial_subset']=='all_trials')
+           & ((df['experiment_id']=='ASC16')
+           | (df['experiment_id']=='ASC20')
+           | (df['experiment_id']=='ASC28 cell 3')
+           | (df['experiment_id']=='ASC22'))
+           ], prefix = 'plot3R')
+
+    plot_4(df[
+               ((df['weights']=='democratic_weights')
+               | (df['weights']=='resp_only')
+               | (df['weights']=='unresp_only'))
+               & (df['trial_subset']=='all_trials')
+               ])
+
+    plot_4_2(df[
+               ((df['weights']=='democratic_weights')
+               | (df['weights']=='resp_only')
+               | (df['weights']=='unresp_only'))
+               & (df['trial_subset']=='all_trials')
+           & ((df['experiment_id']=='ASC16')
+           | (df['experiment_id']=='ASC20')
+           | (df['experiment_id']=='ASC28 cell 3')
+           | (df['experiment_id']=='ASC22'))
+           ], prefix = 'plot4R')
 
 def plot_simulation_tuning_curves(df, prefix=''):
 

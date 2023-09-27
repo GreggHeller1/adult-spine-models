@@ -5,6 +5,7 @@ import os
 import scipy.io as sio
 import h5py
 import json
+import numpy as np
 from datetime import datetime as dt
 
 ################
@@ -73,6 +74,12 @@ def _loadmat(filename):
 ################
 # data out
 #################
+
+def save_model_traces(traces_array, name_keywords=''):
+    dfname = f'{name_keywords}_model-traces_{cfg.simulated_trials_per_stim}.npy'
+    df_path = os.path.join(cfg.collect_summary_at_path, dfname)
+    print(f'Saving traces array to {df_path}')
+    np.save(df_path, traces_array)
 
 
 def save_named_iterable_to_json(**kwargs):

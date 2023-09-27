@@ -3,10 +3,29 @@ import numpy as np
 from src import config as cfg
 from src import helper_functions as hf
 import xarray as xr
+import pandas as pd
 
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
 
+
+#########
+#Default functions must be defined first so they have something to point to
+def democratic_weights(spine_data):
+    return get_weight_matrix(spine_data, hf.spines_dist_from_root, include_all)
+
+
+
+def linear_integration(traces):
+    return np.sum(traces, axis=0) #should be directions x samples
+
+def somatic_identity(traces):
+    #This somatic function is pass through, it does not apply an additional linear or nonlinear normalization on top of the integration
+    return traces
+
+
+
+#############
 def run_subset_model(spine_data, weight_function = democratic_weights, subset='all'):
     spine_activity_array, spines_per_fov_list = compile_spine_traces(spine_data, subset = subset)
     return run_model(spine_data, spine_activity_array, spines_per_fov_list, weight_function = weight_function)
@@ -41,7 +60,7 @@ def compile_spine_traces(spine_data, mask_func = None):
         bap_trials = get_subset_mask(fov_activity_meta, mask_func)
         #Should be directions x presntations
 
-        fov_activity_subset = mask_traces(bap_trials_reshaped, fov_activity)
+        fov_activity_subset = mask_traces(bap_trials, fov_activity)
         #Make sure you check this
 
         activity_list.extend(list(fov_activity_subset))
@@ -53,7 +72,7 @@ def compile_spine_traces(spine_data, mask_func = None):
 
         spine_labels.extend(these_spine_labels)
 
-    print('####')
+    #print('####')
     all_spine_activity_array = np.array(activity_list) #this is spines x directions x presentations x samples
 
     #here seems like a good time to make this into an xarray as well...
@@ -74,16 +93,17 @@ def get_subset_mask(fov_activity_meta, mask_func):
     trials = hf.get_stim_num(fov_activity_meta)
     presentations = hf.get_presentation_num(fov_activity_meta)
     reshaped_trial_params = np.reshape(trial_param, (trials,presentations))
-    #Should be directions x presntations
+    #print(reshaped_trial_params.shape)
+    #Should be directions x presntations - verified. As long as downstream uses correctly
     return reshaped_trial_params
 
 
 def all_trials(fov_activity_meta):
-
-    return np.ones()
+    bap_trials = baps_trials_only(fov_activity_meta)
+    return np.ones(bap_trials.shape)
 
 def baps_trials_only(fov_activity_meta):
-    return np.array(hf.get_bap_trials_meta(metadata_dict)).astype(int)
+    return np.array(hf.get_bap_trials_meta(fov_activity_meta)).astype(int)
 
 def no_bap_trials(fov_activity_meta):
     bap_trials = baps_trials_only(fov_activity_meta)    
@@ -126,7 +146,11 @@ def compute_model_output_from_random_sampled_fovs(spine_data,
     #except a list for each - full prameters sets of weight, integration and somatic pairs. Also should pass in flags for unresponsive and exclude baps here
 
 
-    model_output = 
+    num_directions = len(all_spine_activity_array['directions'])
+    num_samples= len(all_spine_activity_array['samples'])
+    model_output = xr.DataArray(np.zeros((num_directions, simulated_trials_per_stim, num_samples)),
+                                coords={'directions': all_spine_activity_array['directions'],'samples': all_spine_activity_array['samples']},
+                                dims=["directions", "presentations", "samples"])
 
     for i in range(simulated_trials_per_stim):
         simulated_trial_traces = sample_trial_from_fov(all_spine_activity_array, spines_per_fov_list)
@@ -168,36 +192,37 @@ def sample_trial_from_fov(all_spine_activity_array, spines_per_fov_list):
 #Getting the weight matricies
 ###############################################################################################################
 
+#get_weight_matrix(spine_data, hf.spines_dist_from_root, include_all)
+
 def get_weight_matrix(spine_data, param_func, weight_func=None):
     param_vector = []
     for i, (fov_activity, fov_metadata )in enumerate(hf.fov_generator(spine_data)):
-        fov_params = param_func(fov_metadata)
+        fov_params = param_func(fov_activity, fov_metadata)
         param_vector.extend(fov_params)
-    param_array = np.array(size_vector)
+    param_array = np.array(param_vector)
     if weight_func:
         weight_array = weight_func(param_array)
     else:
         weight_array = param_array
 
+    #Need to replace NANs with 0
+    weight_array = np.nan_to_num(weight_array, nan=0.0, posinf=0.0, neginf=0.0)
     #we only want to normalize if its linear (and makes sense to normalize within cell, not within FOV)
-    #but actually this won't affect binacy weights - just dividing by 1. 
+    #but actually this won't affect binary weights - just dividing by 1.
     normalized_weight_array = weight_array/np.max(weight_array)
     return normalized_weight_array
 
-def democratic_weights(spine_data):
-    return get_weight_matrix(spine_data, include_all, hf.spines_dist_from_root)
-
 def weights_from_distance_lin(spine_data):
-    return get_weight_matrix(spine_data, weight_from_dist, hf.spines_dist_from_root)
+    return get_weight_matrix(spine_data, hf.spines_dist_from_root, weight_from_distance)
 
-def weight_from_dist(dist_array):
+def weight_from_distance(dist_array):
     #y = mx+b
     b = 1
-    m = -.6
+    m = -.002
     return dist_array*m+b
 
-def weights_from_size_lin(spine_data, weight_func):
-    return get_weight_matrix(spine_data, weight_from_size, hf.spines_size)
+def weights_from_size_lin(spine_data):
+    return get_weight_matrix(spine_data, hf.spines_size, weight_from_size)
 
 def weight_from_size(size_array):
     #y = mx+b
@@ -226,8 +251,9 @@ def binary_weights(param_array, threshold_percentage):
     #if there are 100 spines and threshold_percentage, this will take the 20 spines with the highest params. NOT all spines with a param within 20% of the highest param.
     total_spines = len(param_array)
     threshold_n = round(total_spines*threshold_percentage/100)
-    ind = np.argpartition(param_array, threshold_n)[threshold_n:]
-    weights = np.zeros(param_array.shape)
+
+    ind = np.argpartition(param_array, -threshold_n)[-threshold_n:]
+    weights = np.zeros(len(param_array))
     weights[ind] = 1
     return weights
 
@@ -242,11 +268,11 @@ def weight_from_neck_len(size_array):
     return size_array*m+b
 
 
-def responsive_spines_bin(spine_data, weight_func):
-    return get_weight_matrix(spine_data, None, hf.spines_responsiveness)
+def responsive_spines_bin(spine_data):
+    return get_weight_matrix(spine_data, hf.spines_responsiveness, None)
 
-def unresponsive_spines_bin(spine_data, weight_func):
-    return get_weight_matrix(spine_data, invert_bool, hf.spines_responsiveness)
+def unresponsive_spines_bin(spine_data):
+    return get_weight_matrix(spine_data, hf.spines_responsiveness, invert_bool)
 
 def invert_bool(binary_param_array):
     return np.logical_not(binary_param_array).astype(int)
@@ -262,29 +288,25 @@ def apply_weights(weights, traces):
     return weighted_traces
 
 def mask_traces(weights, traces):
-    tile_dims = (len(traces['spines']), len(traces['samples']), 1)
+    #weights is stims x presentations
+    #traces is coming in as spines x stims x presentations x samples
+    #and its just a numpy array, not an Xarray.
+    tile_dims = (traces.shape[3], traces.shape[0], 1,1) #( samples x spines)
     tiled_weights = np.tile(weights, tile_dims )
-    tiled_weights = np.rollaxis(tiled_weights, -1)
+    tiled_weights = np.moveaxis(tiled_weights, 0,3)
     masked_traces = traces*tiled_weights
     return masked_traces
 
 
 ###############################################################################################################
 
-def linear_integration(traces):
-    return np.sum(traces, axis=0) #should be directions x samples
-
-def somatic_identity(traces):
-    #This somatic function is pass through, it does not apply an additional linear or nonlinear normalization on top of the integration
-    return traces
-
 
 ###############################################################################################################
 #Not particular to the model - mostly tuning curve and handling onset/offset/traces
 ###############################################################################################################
 def linear_normalization(array_in):
-    zeroed_array = array_in-min(array_in)
-    return zeroed_array/max(zeroed_array)
+    zeroed_array = array_in-np.min(array_in)
+    return zeroed_array/np.max(zeroed_array)
 
 def select_timesteps(traces, first_sample =cfg.first_sample_to_take, last_sample =cfg.last_sample_to_take):
     selected_timesteps = traces[:,:,first_sample:last_sample]
@@ -296,6 +318,8 @@ def get_stim_on_traces(traces):
 
 def compute_trial_means(traces):
     on_period = get_stim_on_traces(traces)
+    #This is for the anova - output should be very similar to kyles trial amps
+    #should be shape: stims x presentations as opposed to the tuning curve which is just stims x 1
     #on_period = on_period.reshape(on_period.shape[0], on_period.shape[1]*on_period.shape[2])
     try:
         trial_means = on_period.mean(dim='samples')
@@ -342,9 +366,9 @@ def compute_tuning_curves(traces):
     return compute_median_tuning(traces)
 
 def compute_normalized_tuning_curves(traces):
-    tuning_curve = compute_tuning_curve(traces)
-    normalized_tuning_curve = linear_normalization(trial_means)
-    max_amp = np.max(trial_means)
+    tuning_curve = compute_tuning_curves(traces)
+    normalized_tuning_curve = linear_normalization(tuning_curve)
+    max_amp = np.max(tuning_curve)
     return normalized_tuning_curve, max_amp
 
 
@@ -356,9 +380,8 @@ def compare_tuning_curves_dot(means_1, means_2):
 
 
 def compare_tuning_curves_anova(trial_amps_1_df, trial_amps_2_df):
-    df_1 = onvert_trial_amps_to_df(trial_amps_1)
-    df_2 = onvert_trial_amps_to_df(trial_amps_2)
-    df = pd.concat([df_1, df_2])
+
+    df = pd.concat([trial_amps_1_df, trial_amps_2_df])
     model = ols("amplitude ~ C(stim) + C(source) + C(source):C(stim)",data = df).fit()
         #C() indicates that the variable should be treated as categorical. They should also be strings at this point even though not strictly necessary
     anova_table = sm.stats.anova_lm(model, typ=2)
@@ -368,13 +391,13 @@ def compare_tuning_curves_anova(trial_amps_1_df, trial_amps_2_df):
 
 def convert_trial_amps_to_df(trial_amps, source=None):
     #each amplitude needs to be a row with columns: amplitude, model_name, stimulus
-    num_presentations = shape(trial_amps)[1]
-    num_stims = shape(trial_amps)[2]
+    num_presentations = trial_amps.shape[1]
+    num_stims = trial_amps.shape[0]
 
     df_list = []
     for i in range(num_presentations):
         for j in range(num_stims):
-            df_list.append({'source':source, 'stim': str(j), 'amplitude': trial_amps[i,j]})
+            df_list.append({'source':source, 'stim': str(j), 'amplitude': trial_amps[j,i]})
     return pd.DataFrame(df_list)
 
 
