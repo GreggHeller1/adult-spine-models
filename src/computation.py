@@ -88,6 +88,16 @@ def compile_spine_traces(spine_data, mask_func = None):
     return data_xr, spines_per_fov_list
 
 
+def shuffle_along_axis(a, axis): #from https://stackoverflow.com/questions/5040797/shuffling-numpy-array-along-a-given-axis
+    idx = np.random.rand(*a.shape).argsort(axis=axis)
+    return np.take_along_axis(a,idx,axis=axis)
+
+
+def shuffle_spine_traces(spine_traces):
+    #right now this shuffles without regard to fov... may want to change this in the future?
+    rng = np.random.default_rng()
+    return rng.permuted(spine_traces, axis=1)
+
 def get_subset_mask(fov_activity_meta, mask_func):
     trial_param = mask_func(fov_activity_meta)
     trials = hf.get_stim_num(fov_activity_meta)
@@ -357,9 +367,12 @@ def compute_and_compare_tuning_curves(traces_1, traces_2):
 
 def compare_tuning_curves(means_1, means_2):
     #first make both unit norm
-    means_1_unit_norm = means_1/np.dot(means_1, means_1)
-    means_2_unit_norm = means_2/np.dot(means_2, means_2)
+    means_1_unit_norm = make_unit_norm(means_1)
+    means_2_unit_norm = make_unit_norm(means_2)
     return np.dot(means_1_unit_norm, means_2_unit_norm)
+
+def make_unit_norm(array_in):
+  return array_in/np.linalg.norm(array_in)
 
 
 def compute_tuning_curves(traces):
@@ -372,11 +385,11 @@ def compute_normalized_tuning_curves(traces):
     return normalized_tuning_curve, max_amp
 
 
-def compare_tuning_curves_dot(means_1, means_2):
-    #first make both unit norm
-    means_1_unit_norm = means_1/np.dot(means_1, means_1)
-    means_2_unit_norm = means_2/np.dot(means_2, means_2)
-    return np.dot(means_1_unit_norm, means_2_unit_norm)
+#def compare_tuning_curves_dot(means_1, means_2):
+#    #first make both unit norm
+#    means_1_unit_norm = means_1/np.dot(means_1, means_1)
+#    means_2_unit_norm = means_2/np.dot(means_2, means_2)
+#    return np.dot(means_1_unit_norm, means_2_unit_norm)
 
 
 def compare_tuning_curves_anova(trial_amps_1_df, trial_amps_2_df):

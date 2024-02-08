@@ -112,8 +112,8 @@ def main(current_data_path, globals = None):
             #### Get diferenct trace matricies for each exclusion criteria
             included_trials_list = {
                 'all_trials': comp.all_trials,
-                'baps_trials_only': comp.baps_trials_only, 
-                'no_bap_trials': comp.no_bap_trials,
+            #    'baps_trials_only': comp.baps_trials_only, 
+            #    'no_bap_trials': comp.no_bap_trials,
                 }
             inclusion_type_spine_traces_dict = {}
             spine_counts_dict = {}
@@ -126,17 +126,17 @@ def main(current_data_path, globals = None):
             print('Generating weight matricies for each model')
             weight_functions_dict = {
                 'democratic_weights': comp.democratic_weights,
-                'size_weights': comp.weights_from_size_lin,
-                'dist_weights': comp.weights_from_distance_lin,
-                'resp_only': comp.responsive_spines_bin,
-                'unresp_only': comp.unresponsive_spines_bin
+            #    'size_weights': comp.weights_from_size_lin,
+            #    'dist_weights': comp.weights_from_distance_lin,
+            #    'resp_only': comp.responsive_spines_bin,
+            #    'unresp_only': comp.unresponsive_spines_bin
                 }
 
             weight_matricies_dict = {}
             for weight_name, weight_function in weight_functions_dict.items():
                 weight_matricies_dict[weight_name] = weight_function(spine_data)
-            weight_matricies_dict['size_AND_dist'] = weight_matricies_dict['size_weights'] * weight_matricies_dict['dist_weights']
-            weight_matricies_dict['size_dist_resp_only'] = weight_matricies_dict['size_AND_dist']*weight_matricies_dict['resp_only']
+            #weight_matricies_dict['size_AND_dist'] = weight_matricies_dict['size_weights'] * weight_matricies_dict['dist_weights']
+            #weight_matricies_dict['size_dist_resp_only'] = weight_matricies_dict['size_AND_dist']*weight_matricies_dict['resp_only']
 
 
             #### List the different integration models to use
@@ -203,6 +203,100 @@ def main(current_data_path, globals = None):
                                 }
 
 
+            #run_shuffles
+            shuffle_scores_dict = {}
+            if cfg.num_shuffles:
+                shuffle_scores_list = []
+                #Soma tuning curve retrived now so we only keep ths imilarity scores
+                soma_traces = hf.get_traces(soma_data)
+                #soma_means_normalized, soma_max_amplitude = comp.get_normalized_means(soma_traces)
+
+                kyle_tuning_curve = hf.get_precomputed_tuning_curve(soma_data)
+                soma_tuning_curve_normalized = comp.linear_normalization(kyle_tuning_curve)
+
+                print('Running shuffles ')
+                j=j+1
+                ################################
+                included_trial_types = 'all_trials'
+                spine_traces = inclusion_type_spine_traces_dict[included_trial_types]
+                subset_name = str(included_trial_types)
+                spines_per_fov_list = spine_counts_dict[included_trial_types]
+                print(f"Running shuffles on included trials: {included_trial_types}")
+                for k in range(cfg.num_shuffles):
+                    print(f'shuffle {k}')
+                    #shuffle spine traces here
+                    shuffled_spine_traces = comp.shuffle_spine_traces(spine_traces)
+                    shuffled_spine_traces = xr.DataArray(shuffled_spine_traces,
+                        coords={'spines': spine_traces['spines'], 'directions': spine_traces['directions'],'samples': spine_traces['samples']},
+                        dims=['spines', "directions", "presentations", "samples"]
+                        )
+                    #this is spines x directions x presentations x samples
+                    
+                    shuffled_output_traces = comp.init_traces_xarray(spine_traces, cfg.simulated_trials_per_stim)
+
+                    for i in range(cfg.simulated_trials_per_stim):
+                        simulated_trial_traces = comp.sample_trial_from_fov(shuffled_spine_traces, spines_per_fov_list)
+                        #TODO eventually should numpify this ^^^ loop....
+
+                        ############################
+                        weight_name = 'democratic_weights'
+                        weights = weight_matricies_dict[weight_name]
+                        #print(f"Using weight matrix: {weight_name}")
+                        #multiply by weights here
+                        weighted_simulated_trial_traces = comp.apply_weights(weights, simulated_trial_traces)
+
+                        #############################
+                        integration_function = comp.linear_integration
+                        #apply integration model here
+                        simulated_input_to_soma = integration_function(weighted_simulated_trial_traces)
+                        #integration_func_name = 'lin_int'
+                        integration_func_name = integration_function.__name__
+                        #print(f"Using integration function: {integration_func_name}")
+
+                        ##############################
+                        somatic_function  = comp.somatic_identity
+                        somatic_func_name = somatic_function.__name__
+                        #apply somatic nonlinearity (if using) here
+                        simulated_output_of_soma = somatic_function(simulated_input_to_soma)
+
+                        shuffled_output_traces[:,i,:] = simulated_output_of_soma
+
+
+                    model_tuning_curve_normalized, model_max_amplitude = comp.compute_normalized_tuning_curves(shuffled_output_traces)
+
+                    #Compute various similarity metrics
+                    ############
+                    #Correlation
+                    try:
+                        model_corr_to_soma = stats.pearsonr(soma_tuning_curve_normalized, model_tuning_curve_normalized)
+                    except ValueError as E:
+                        globals['errors'][current_data_dir] = f'One or more of the model tuning curves seems to have been all NaNs: {full_model_name}'
+                        model_tuning_curve_normalized = np.nan_to_num(model_tuning_curve_normalized, nan=0.0, posinf=0.0, neginf=0.0)
+                    #Dot product based similarity score
+                    model_similarity_score = comp.compare_tuning_curves(soma_tuning_curve_normalized, model_tuning_curve_normalized)
+
+                    #now we need to put them in a dataframe so all 3 can be saved.
+
+                    shuffle_scores_dict = {
+                        'model_correlation_to_soma_r': model_corr_to_soma[0],
+                        'model_correlation_to_soma_p': model_corr_to_soma[1],
+                        'model_soma_similarity_score': model_similarity_score,
+                        }
+                    shuffle_scores_list.append(shuffle_scores_dict)
+                df = pd.DataFrame(shuffle_scores_list)
+
+
+                full_model_name = f'{weight_name}-{str(included_trial_types)}-{integration_func_name}-{somatic_func_name}'
+                unshuffled_traces = model_outputs[full_model_name]
+                unshuffled_curve, unshuffled_max_amplitude = comp.compute_normalized_tuning_curves(unshuffled_traces)
+                unshuffled_model_score = comp.compare_tuning_curves(soma_tuning_curve_normalized, unshuffled_curve)
+                shuffle_array = df.loc[:, 'model_soma_similarity_score']
+                num_lower = (shuffle_array > unshuffled_model_score).sum()
+                pvalue = num_lower/len(shuffle_array)
+
+                io.save_csv(df, name_keywords=f'shuffle_scores_{experiment_id}_pvalue_{pvalue}')
+
+       
             ############
             #Save the outputs
             ############
@@ -261,6 +355,13 @@ def main(current_data_path, globals = None):
             #if we actually wanted to boostrap this we could, wrap the above into a function, repeat it and then average the output values. 
             #not sure if this would actually be any better statsitically though. The limitation is still the number of soma trials.
             for full_model_name, model_traces in model_outputs.items():
+
+                #save the traces image
+                name = f'{experiment_id}_{full_model_name}_{cfg.simulated_trials_per_stim}'
+                plot.save_trace_image(model_traces, prefix=name)
+                soma_name = f'{experiment_id}_soma'
+                plot.save_trace_image(soma_traces, prefix = soma_name)
+
                 model_tuning_curve_normalized, model_max_amplitude = comp.compute_normalized_tuning_curves(model_traces)
 
                 #put the means into the model_dict list which will be saved as a seperate CSV for each cell

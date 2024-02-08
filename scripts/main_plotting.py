@@ -20,7 +20,8 @@ def main_plotting_loop():
                 df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
                 print(df.columns)
                 plot.plot_simulation_tuning_curves(df, prefix=exp)
-        if 'single_neuron_simulation_scores' in filename:
+        #if 'single_neuron_simulation_scores_10000' in filename:
+        if 'single_neuron_simulation_scores_1000_01292024' in filename:
             pass
             print("###########################################################")
             print("###########################################################")

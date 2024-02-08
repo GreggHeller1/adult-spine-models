@@ -3,6 +3,7 @@ import numpy as np
 import os
 import seaborn as sns
 import functools
+from statannotations.Annotator import Annotator
 
 from src import config as cfg
 from src import computation as comp
@@ -391,7 +392,8 @@ def plot_decorator(plot_func):
         #plt.legend(handles = legend_handles, loc='right',
         #           labels=['Group 1: C1', 'Group 1: C2', 'Group 2: C1', 'Group 2: C2'])
 
-        figname = f'{prefix}{"-"*bool(prefix)}model_performance_summaries.png'
+
+        figname = f'{prefix}{"-"*bool(prefix)}model_performance_summaries.{cfg.figure_type}'
         fig_path = os.path.join(cfg.collect_summary_at_path, figname)
         print(f'Saving figure to {fig_path}')
         fig.savefig(fig_path, bbox_inches='tight')
@@ -419,7 +421,6 @@ def plot_4(df,  prefix='plot4', fig=None, ax=None):
                             palette=palette_colors,
                             #order=['resp_only', 'democratic_weights', 'unresp_only'],
                             alpha= .6,
-                            include_line = False,
                             hue = 'responsive_status',
                             split=True
                             )
@@ -434,7 +435,6 @@ def plot_4_2(df,  prefix='plot4', fig=None, ax=None):
                             palette=palette_colors,
                             #order=['resp_only', 'democratic_weights', 'unresp_only'],
                             alpha= .6,
-                            include_line = False,
                             hue = 'responsive_status',
                             split=False
                             )
@@ -450,7 +450,6 @@ def plot_3(df,  prefix='plot3', fig=None, ax=None):
                             palette=palette_colors,
                             #order=['democratic_weights', 'size_weights', 'dist_weights'],
                             alpha= .6,
-                            include_line = False,
                             hue = 'responsive_status',
                             split=True
                             )
@@ -466,7 +465,6 @@ def plot_3_2(df,  prefix='plot3', fig=None, ax=None):
                             palette=palette_colors,
                             #order=['democratic_weights', 'size_weights', 'dist_weights'],
                             alpha= .6,
-                            include_line = False,
                             hue = 'responsive_status',
                             split=False
                             )
@@ -480,7 +478,6 @@ def plot_2(df,  prefix='plot2', fig=None, ax=None):
                             palette=palette_colors,
                             order=['baps_trials_only', 'all_trials', 'no_bap_trials'],
                             alpha= .6,
-                            include_line = False,
                             )
     return prefix
 
@@ -498,81 +495,124 @@ def plot_1(df,  prefix='plot1', fig=None, ax=None):
 
 def my_violin_swarm(df, x, y, prefix='', fig=None, ax=None, alpha=.4, palette=None,
                     cut=2, linewidth_vi=4, linewidth_sw=1, size=15, color_sw='k', order=None,
-                    include_swarm = True,
-                    include_line = False,
                     hue=None, split=False
                     ):
     if not(palette is None):
         palette = sns.color_palette(palette, len(palette))
 
+
     #sns.violinplot(data=df, x='responsive_status', y='model_soma_similarity_score')
-    sns.violinplot(data=df, x=x, y=y, palette=palette, hue=hue, split=split,
-                   saturation=.75, cut=cut, linewidth=linewidth_vi,
-                   order=order, hue_order=order)
+    if cfg.plot_type == 'violin':
+        sns.violinplot(data=df, x=x, y=y, palette=palette, hue=hue, split=split,
+                       saturation=.75, cut=cut, linewidth=linewidth_vi,
+                       order=order, hue_order=order)
+
+    if cfg.plot_type == 'bar':
+        sns.barplot(data=df, x=x, y=y, palette=palette, hue=hue,
+                       saturation=.75, linewidth=linewidth_vi,
+                       order=order, hue_order=order)
+
+    ax = plt.gca()
+    pairs_list = []
+    for i, category_1 in enumerate(df.loc[:,x].unique()):
+        for j, category_2 in enumerate(df.loc[:,x].unique()):
+            if j>i: #this prevents comparing to self and repeated pars
+                pairs_list.append((category_1, category_2))
+
+    try:
+        annotator = Annotator(ax, pairs_list, data=df, x=x, y=y, order=order)
+        annotator.configure(test='t-test_paired', text_format='star', loc='outside')
+        annotator.apply_and_annotate()
+    except Exception as E:
+        annotator = Annotator(ax, pairs_list, data=df, x=x, y=y, order=order)
+        annotator.configure(test='t-test_ind', text_format='star', loc='outside')
+        annotator.apply_and_annotate()
+    
+
     for violin in ax.collections[::]:
         violin.set_alpha(alpha)
     #sns.violinplot(data=df, x='responsive_status', y='model_soma_similarity_score', hue='responsive_status', order=['responsive', 'unresponsive'], hue_order=None,
     #    bw='scott', cut=0, scale='area', scale_hue=True, gridsize=100, width=0.8, inner='box',
     #    split=False, dodge=True, orient=None, linewidth=None, color='r', palette='Reds', saturation=0.75)
     #Pallette - sns.color_palette(my_palette, 2)
-    if include_swarm:
+
+    if cfg.include_swarm:
         sns.stripplot(data=df,  x=x, y=y, marker="x", linewidth=linewidth_sw, size=size, color=color_sw, order=order)#)# , , )#, order=['responsive', 'unresponsive'])
     #sns.swarmplot(data=df, x='responsive_status', y='model_soma_similarity_score', hue='responsive_status', order=['responsive', unresponsive], hue_order=None, dodge=False,
     #    orient=None, color=None, palette=sns.color_palette(my_palette, 2), size=5, edgecolor='gray', linewidth=0, hue_norm=None,
     #    native_scale=False, formatter=None, legend='auto', warn_thresh=0.05, ax=None, **kwargs)
 
-    if include_line:
+
+    #also plot connecting them 
+    if cfg.include_line:
         sns.lineplot(data=df,  x=x, y=y, hue='experiment_id',
                  color=color_sw)#, order=order)
+
+    csv_name = f'{prefix}{"-"*bool(prefix)}model_performance_summaries.csv'
+    csv_path = os.path.join(cfg.collect_summary_at_path, csv_name)
+    df.to_csv(csv_path)
     return prefix
 
 def plot_all_simulation_scores(df):
 
     #first plot: democratic_scores split by soma repsonsiveness
 
-    #plot_1(df[(df['weights']=='democratic_weights') & (df['trial_subset']=='all_trials')])
+    plot_1(df[(df['weights']=='democratic_weights') & (df['trial_subset']=='all_trials')])
 
 
     #second_plot:
     #normalize the similarity scores first
-    exp_ids = df['experiment_id'].unique()
-    for exp_id in exp_ids:
-        bool_index = df['experiment_id'] == exp_id
-        exp_df = df[bool_index]
-        democratic_index = (df['weights']=='democratic_weights') & (df['trial_subset']=='all_trials')
-        #print(democratic_index)
-        #print('%%%%%%')
-        democratic_sim_score = float(exp_df[democratic_index]['model_soma_similarity_score'])
-        #print(democratic_sim_score)
-        exp_df.loc[:,'model_soma_similarity_score'] = exp_df.loc[:,'model_soma_similarity_score']/democratic_sim_score
-        #must use .loc when setting so it doesn't copy the column
+    if cfg.normalize_similarity_scores:
+        exp_ids = df['experiment_id'].unique()
+        for exp_id in exp_ids:
+            bool_index = df['experiment_id'] == exp_id
+            exp_df = df[bool_index]
+            democratic_index = (df['weights']=='democratic_weights') & (df['trial_subset']=='all_trials')
+            #print(democratic_index)
+            #print('%%%%%%')
+            democratic_sim_score = float(exp_df[democratic_index]['model_soma_similarity_score'])
+            #print(democratic_sim_score)
+            exp_df.loc[:,'model_soma_similarity_score'] = exp_df.loc[:,'model_soma_similarity_score']/democratic_sim_score
+            #must use .loc when setting so it doesn't copy the column
 
-        #print(exp_df['model_soma_similarity_score'])
-        #put it back in the larger data frame
-        df[bool_index] = exp_df
+            #print(exp_df['model_soma_similarity_score'])
+            #put it back in the larger data frame
+            df[bool_index] = exp_df
 
 
-    #plot_model_simulation_scores(df, prefix='normalized')
-    #plot_model_simulation_scores(df[df['trial_subset']=='all_trials'], prefix='normalized2')
+    plot_model_simulation_scores(df, prefix='normalized')
+    plot_model_simulation_scores(df[df['trial_subset']=='all_trials'], prefix='normalized2')
 
     plot_2(df[(df['weights']=='democratic_weights')
            & (df['responsive_status']==True)
            ], prefix = 'plot2R')
 
-    plot_2(df[(df['weights']=='democratic_weights')
-           & (df['responsive_status']==True)
-           & ((df['experiment_id']=='ASC16')
-           | (df['experiment_id']=='ASC20')
-           | (df['experiment_id']=='ASC28 cell 3')
-           | (df['experiment_id']=='ASC22'))
-           ], prefix = 'plot2R')
+    #plot_2(df[(df['weights']=='democratic_weights')
+    #       & (df['responsive_status']==True)
+    #       & ((df['experiment_id']=='ASC16')
+    #       | (df['experiment_id']=='ASC20')
+    #       | (df['experiment_id']=='ASC28 cell 3')
+    #       | (df['experiment_id']=='ASC22'))
+    #       ], prefix = 'plot2Rs')
 
-    plot_3(df[
-               ((df['weights']=='democratic_weights')
-               | (df['weights']=='size_weights')
-               | (df['weights']=='dist_weights'))
-               & (df['trial_subset']=='all_trials')
-               ])
+    #plot_3(df[
+    #           ((df['weights']=='democratic_weights')
+    #           | (df['weights']=='size_weights')
+    #           | (df['weights']=='dist_weights'))
+    #           & (df['trial_subset']=='all_trials')
+    #           ])
+
+    #plot_3_2(df[
+    #       ((df['weights']=='democratic_weights')
+    #       | (df['weights']=='size_weights')
+    #       | (df['weights']=='size_AND_dist')
+    #       | (df['weights']=='dist_weights'))
+    #       & (df['trial_subset']=='all_trials')
+    #       & ((df['experiment_id']=='ASC16')
+    #       | (df['experiment_id']=='ASC20')
+    #       | (df['experiment_id']=='ASC28 cell 3')
+    #       | (df['experiment_id']=='ASC22'))
+    #       ], prefix = 'plot3Rs')
 
     plot_3_2(df[
            ((df['weights']=='democratic_weights')
@@ -580,29 +620,23 @@ def plot_all_simulation_scores(df):
            | (df['weights']=='size_AND_dist')
            | (df['weights']=='dist_weights'))
            & (df['trial_subset']=='all_trials')
-           & ((df['experiment_id']=='ASC16')
-           | (df['experiment_id']=='ASC20')
-           | (df['experiment_id']=='ASC28 cell 3')
-           | (df['experiment_id']=='ASC22'))
+           & (df['responsive_status']==True)
            ], prefix = 'plot3R')
 
-    plot_4(df[
-               ((df['weights']=='democratic_weights')
-               | (df['weights']=='resp_only')
-               | (df['weights']=='unresp_only'))
-               & (df['trial_subset']=='all_trials')
-               ])
+    #plot_4(df[
+    #           ((df['weights']=='democratic_weights')
+    #           | (df['weights']=='resp_only')
+    #           | (df['weights']=='unresp_only'))
+    #           & (df['trial_subset']=='all_trials')
+    #           ])
 
     plot_4_2(df[
                ((df['weights']=='democratic_weights')
                | (df['weights']=='resp_only')
                | (df['weights']=='unresp_only'))
                & (df['trial_subset']=='all_trials')
-           & ((df['experiment_id']=='ASC16')
-           | (df['experiment_id']=='ASC20')
-           | (df['experiment_id']=='ASC28 cell 3')
-           | (df['experiment_id']=='ASC22'))
-           ], prefix = 'plot4R')
+           & (df['responsive_status']==True)
+           ], prefix = 'plot4Rs')
 
 def plot_simulation_tuning_curves(df, prefix=''):
 
@@ -642,18 +676,22 @@ def plot_simulation_tuning_curves(df, prefix=''):
         #Response timing plot
         ###########
 
-def save_trace_image(traces, prefix=''):
-    fig, ax = plot.new_ax()
+def save_trace_image(traces, prefix='', ax=None):
+    fig, ax = new_ax(ax)
     
-    selected_timesteps = comp.select_timesteps(np.array(traces))
+    traces_name = f'{prefix}{"-"*bool(prefix)}_trace_array.npy'
+    trace_path = os.path.join(cfg.collect_summary_at_path, 'traces', traces_name)
+    print(f'Saving traces to {trace_path}')
+    np.save(trace_path, np.array(traces))
+
+    test_traces = np.load(trace_path)
+    selected_timesteps = comp.select_timesteps(np.array(test_traces))
     new_idx = sort_within_all_stims(selected_timesteps, sort_by_mean_amp)#, plot.sort_by_mean_amp)
     ordered_traces = use_as_index(new_idx, selected_timesteps)
 
     ax.imshow(flatten_for_image(ordered_traces), aspect='auto')
 
     figname = f'{prefix}{"-"*bool(prefix)}_trace_image.png'
-    fig_path = os.path.join(cfg.collect_summary_at_path, figname)
+    fig_path = os.path.join(cfg.collect_summary_at_path, 'traces', figname)
     print(f'Saving figure to {fig_path}')
     fig.savefig(fig_path, bbox_inches='tight')
-
-
